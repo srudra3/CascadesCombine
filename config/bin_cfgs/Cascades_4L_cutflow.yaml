@@ -1,0 +1,76 @@
+Bin_Run3_4L_Cascades_noCuts:
+  cuts: ""
+  lep-cuts: "" 
+  predefined-cuts: ""
+  user-cuts: ""
+
+Bin_Run3_4L_Cascades_4LCut:
+  cuts: "Nlep>=4"
+  lep-cuts: |
+      >=4Gold|>=4Silver;
+  predefined-cuts: ""
+  user-cuts: ""
+
+Bin_Run3_4L_Cascades_PtEtaSip3DCuts:
+  cuts: "Nlep>=4"
+  lep-cuts: |
+      >=4Gold|>=4Silver;   
+  predefined-cuts: ""
+  user-cuts: "PT_GS_cuts_debug"
+
+Bin_Run3_4L_Cascades_Trigger3l:
+  cuts: "Nlep>=4"
+  lep-cuts: |
+      >=4Gold|>=4Silver;
+  predefined-cuts: ""
+  user-cuts: "PT_GS_cuts_debug;trigger3l"
+
+Bin_Run3_4L_Cascades_bVeto:
+  cuts: "Nlep>=4;Nbjet==0"
+  lep-cuts: |
+      >=4Gold|>=4Silver;
+  predefined-cuts: ""
+  user-cuts: "PT_GS_cuts_debug;trigger3l"
+
+
+Bin_Run3_4L_Cascades_MinMll:
+  cuts: "Nlep>=4;Nbjet==0"
+  lep-cuts: |
+      >=4Gold|>=4Silver;
+  predefined-cuts: ""
+  user-cuts: "PT_GS_cuts_debug;trigger3l;minM_ll_gt4_GS"
+
+Bin_Run3_4L_Cascades_M2lZVeto:
+  cuts: "Nlep>=4;Nbjet==0"
+  lep-cuts: |
+      >=4Gold|>=4Silver;
+  predefined-cuts: ""
+  user-cuts: "PT_GS_cuts_debug;trigger3l;minM_ll_gt4_GS;Z_veto_OSSF_GS"
+
+Bin_Run3_4L_Cascades_M4lZVeto:
+  cuts: "Nlep>=4;Nbjet==0"
+  lep-cuts: |
+      >=4Gold|>=4Silver;
+  predefined-cuts: ""
+  user-cuts: "PT_GS_cuts_debug;trigger3l;minM_ll_gt4_GS;Z_veto_OSSF_GS;M4l_not_Z"
+
+Bin_Run3_4L_Cascades_M4lHVeto:
+  cuts: "Nlep>=4;Nbjet==0"
+  lep-cuts: |
+      >=4Gold|>=4Silver;
+  predefined-cuts: ""
+  user-cuts: "PT_GS_cuts_debug;trigger3l;minM_ll_gt4_GS;Z_veto_OSSF_GS;M4l_not_Z;M4l_not_H"
+
+Bin_Run3_4L_Cascades_Max2lOR3l:
+  cuts: "Nlep>=4;Nbjet==0"
+  lep-cuts: |
+      >=4Gold|>=4Silver;
+  predefined-cuts: ""
+  user-cuts: "PT_GS_cuts_debug;trigger3l;minM_ll_gt4_GS;Z_veto_OSSF_GS;M4l_not_Z;M4l_not_H;thrustHemi_GS"
+
+Bin_Run3_4L_Cascades_Pt4LJets:
+  cuts: "Nlep>=4;Nbjet==0"
+  lep-cuts: |
+      >=4Gold|>=4Silver;
+  predefined-cuts: ""
+  user-cuts: "PT_GS_cuts_debug;trigger3l;minM_ll_gt4_GS;Z_veto_OSSF_GS;M4l_not_Z;M4l_not_H;thrustHemi_GS;Pt4LJets_cut"
