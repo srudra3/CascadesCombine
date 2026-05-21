@@ -1,0 +1,76 @@
+NoCuts:
+  cuts: ""
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "" 
+
+
+Atlest4GS_Leptons:
+  cuts: ""
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep"
+
+PtEtaSip3D:
+  cuts: ""
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;cut_4l_eta;cut_4l_sip3d"
+
+Trigger3l:
+  cuts: ""
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;cut_4l_eta;cut_4l_sip3d;trigger3l"
+
+
+bVeto:
+  cuts: "Nbjet==0"
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;cut_4l_eta;cut_4l_sip3d;trigger3l"
+
+
+
+Minmll:
+  cuts: "Nbjet==0"
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;cut_4l_eta;cut_4l_sip3d;trigger3l;cut_4l_minmll"
+
+
+M2lZVeto:
+  cuts: "Nbjet==0"
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;cut_4l_eta;cut_4l_sip3d;trigger3l;cut_4l_minmll;cut_4l_offz"
+
+
+
+M4lZVetoandM4lHVeto:
+  cuts: "Nbjet==0"
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;cut_4l_eta;cut_4l_sip3d;trigger3l;cut_4l_minmll;cut_4l_offz;cut_4l_m4lzv"
+
+Max2LOR3L:
+  cuts: "Nbjet==0"
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;cut_4l_eta;cut_4l_sip3d;trigger3l;cut_4l_minmll;cut_4l_offz;cut_4l_m4lzv;cut_4l_mxcompmll"
+
+Pt4LJets:
+  cuts: "Nbjet==0"
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;cut_4l_eta;cut_4l_sip3d;trigger3l;cut_4l_minmll;cut_4l_offz;cut_4l_m4lzv;cut_4l_mxcompmll;cut_4l_pt4l"
+
+
+
+
+
+
+
+
+
+
