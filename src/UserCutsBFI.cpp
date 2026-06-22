@@ -237,7 +237,7 @@ QuadLeptonResult ComputeQuadLeptonInfo(
     double osmllC = 99999.0;
     if ((qfs[0]*qfs[3])<0 && (qfs[1]*qfs[2])<0) osmllA = std::max(m12, m34);
     if ((qfs[0]*qfs[2])<0 && (qfs[1]*qfs[3])<0) osmllB = std::max(m13, m24);
-    if ((qfs[0]*qfs[3])<0 && (qfs[1]*qfs[2])<0) osmllC = std::max(m14, m23);
+    if ((qfs[0]*qfs[1])<0 && (qfs[2]*qfs[3])<0) osmllC = std::max(m14, m23);
     result.minOthermllOS = std::min({osmllA, osmllB, osmllC});
     
     result.minm3l = 0.0;
@@ -334,14 +334,36 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
         node = node.Define("quad_eta_max",
             [](const std::vector<int>& vlidx, const std::vector<double>& eta_lep) -> double {
                 if (vlidx.size() < 4) return 999.0;
-                return std::max({std::abs(eta_lep[vlidx[0]]), std::abs(eta_lep[vlidx[1]]), 
-                           std::abs(eta_lep[vlidx[2]]), std::abs(eta_lep[vlidx[3]])});
+		std::vector<double> absetas = {
+		    std::abs(eta_lep[vlidx[0]]),
+		    std::abs(eta_lep[vlidx[1]]),
+		    std::abs(eta_lep[vlidx[2]]),
+		    std::abs(eta_lep[vlidx[3]])
+		};
+                std::sort(absetas.begin(), absetas.end());
+		return absetas[3];
             },
             {"vlidx_4l", "Eta_lep"}
         );
     }
 
 
+    if (!node.HasColumn("quad_eta_min")) {
+        node = node.Define("quad_eta_min",
+            [](const std::vector<int>& vlidx, const std::vector<double>& eta_lep) -> double {
+                if (vlidx.size() < 4) return 999.0;
+		std::vector<double> absetas = {
+		    std::abs(eta_lep[vlidx[0]]),
+		    std::abs(eta_lep[vlidx[1]]),
+		    std::abs(eta_lep[vlidx[2]]),
+		    std::abs(eta_lep[vlidx[3]])
+		};
+                std::sort(absetas.begin(), absetas.end());
+		return absetas[0];
+            },
+            {"vlidx_4l", "Eta_lep"}
+        );
+    }
  
     CutDef cut_4l_pt1;
     cut_4l_pt1.name = "cut_4l_pt1";
@@ -368,12 +390,20 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
     cuts[cut_4l_pt4.name] = cut_4l_pt4;
 	    
 	    
-	    
     CutDef cut_4l_eta;
     cut_4l_eta.name = "cut_4l_eta";
     cut_4l_eta.columns = {"quad_eta_max"};
-    cut_4l_eta.expression = "quad_eta_max < 2.1";
+    cut_4l_eta.expression = "quad_eta_max < 2.1"; //Only for debugging, really should be 2.1
     cuts[cut_4l_eta.name] = cut_4l_eta;  
+
+
+    CutDef cut_4l_eta_min;
+    cut_4l_eta_min.name = "cut_4l_eta_min";
+    cut_4l_eta_min.columns = {"quad_eta_min"};
+    cut_4l_eta_min.expression = "quad_eta_min < 5.0"; //Shouldn't do anything 
+    cuts[cut_4l_eta_min.name] = cut_4l_eta_min;  
+
+
     // Step 4: Compute QuadLeptonInfo from the 4 leptons (Ana.C lines 1034-1072)
     if (!node.HasColumn("quad_info")) {
         node = node.Define("quad_info",
@@ -463,15 +493,16 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
         node = node.Define("quad_pt4l",
             [](const std::vector<int>& vlidx, const std::vector<double>& pt_lep,
                const std::vector<double>& eta_lep, const std::vector<double>& phi_lep,
-               const std::vector<double>& m_lep, int njet, const std::vector<double>& jet_pt,
-               const std::vector<double>& jet_eta, const std::vector<double>& jet_phi) -> bool {
+               const std::vector<double>& m_lep, const std::vector<int>& pdgid_lep,
+	       int njet, const std::vector<double>& jet_pt,
+               const std::vector<double>& jet_eta, const std::vector<double>& jet_phi, const std::vector<double>& jet_m) -> bool {
                 if (vlidx.size() < 4) return false;
                 
                 // Build 4-lepton FourVec (Ana.C lines 1034-1037, 1076)
-                FourVec l1 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[0]], eta_lep[vlidx[0]], phi_lep[vlidx[0]], m_lep[vlidx[0]]);
-                FourVec l2 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[1]], eta_lep[vlidx[1]], phi_lep[vlidx[1]], m_lep[vlidx[1]]);
-                FourVec l3 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[2]], eta_lep[vlidx[2]], phi_lep[vlidx[2]], m_lep[vlidx[2]]);
-                FourVec l4 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[3]], eta_lep[vlidx[3]], phi_lep[vlidx[3]], m_lep[vlidx[3]]);
+                FourVec l1 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[0]], pt_lep[vlidx[0]], eta_lep[vlidx[0]], phi_lep[vlidx[0]], m_lep[vlidx[0]]);
+                FourVec l2 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[1]], pt_lep[vlidx[1]], eta_lep[vlidx[1]], phi_lep[vlidx[1]], m_lep[vlidx[1]]);
+                FourVec l3 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[2]], pt_lep[vlidx[2]], eta_lep[vlidx[2]], phi_lep[vlidx[2]], m_lep[vlidx[2]]);
+                FourVec l4 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[3]], pt_lep[vlidx[3]], eta_lep[vlidx[3]], phi_lep[vlidx[3]], m_lep[vlidx[3]]);
                 FourVec l1234 = (l1 + l2) + (l3 + l4);
                 
                 double pt4l = l1234.Pt();
@@ -481,7 +512,7 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
                 if (njet > 0 && !jet_pt.empty()) {
                     FourVec allJets;
                     for (size_t j = 0; j < jet_pt.size() && j < jet_eta.size() && j < jet_phi.size(); ++j) {
-                        FourVec jet = FourVec::FromPtEtaPhiM(0, jet_pt[j], jet_eta[j], jet_phi[j], 0.0);
+                        FourVec jet = FourVec::FromPtEtaPhiM(1, jet_pt[j], jet_eta[j], jet_phi[j], jet_m[j]);
                         allJets = allJets + jet;
                     }
                     FourVec ljets = l1234 + allJets;
@@ -495,7 +526,7 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
                     return pt4ljets >= 30.0;  // Will be cut as pt4ljets >= 30.0
                 }
             },
-            {"vlidx_4l", "PT_lep", "Eta_lep", "Phi_lep", "M_lep", "Njet", "PT_jet", "Eta_jet", "Phi_jet"}
+            {"vlidx_4l", "PT_lep", "Eta_lep", "Phi_lep", "M_lep", "PDGID_lep", "Njet", "PT_jet", "Eta_jet", "Phi_jet", "M_jet"}
         );
     }
     
@@ -514,48 +545,79 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
         node = node.Define("quad_m4l",
             [](const std::vector<int>& vlidx, const std::vector<double>& pt_lep,
                const std::vector<double>& eta_lep, const std::vector<double>& phi_lep,
-               const std::vector<double>& m_lep) -> double {
+               const std::vector<double>& m_lep, const std::vector<int>& pdgid_lep) -> double {
                 if (vlidx.size() < 4) return 0.0;
                 
                 // Build 4-lepton system mass
-                FourVec l1 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[0]], eta_lep[vlidx[0]], phi_lep[vlidx[0]], m_lep[vlidx[0]]);
-                FourVec l2 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[1]], eta_lep[vlidx[1]], phi_lep[vlidx[1]], m_lep[vlidx[1]]);
-                FourVec l3 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[2]], eta_lep[vlidx[2]], phi_lep[vlidx[2]], m_lep[vlidx[2]]);
-                FourVec l4 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[3]], eta_lep[vlidx[3]], phi_lep[vlidx[3]], m_lep[vlidx[3]]);
+                FourVec l1 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[0]], pt_lep[vlidx[0]], eta_lep[vlidx[0]], phi_lep[vlidx[0]], m_lep[vlidx[0]]);
+                FourVec l2 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[1]], pt_lep[vlidx[1]], eta_lep[vlidx[1]], phi_lep[vlidx[1]], m_lep[vlidx[1]]);
+                FourVec l3 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[2]], pt_lep[vlidx[2]], eta_lep[vlidx[2]], phi_lep[vlidx[2]], m_lep[vlidx[2]]);
+                FourVec l4 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[3]], pt_lep[vlidx[3]], eta_lep[vlidx[3]], phi_lep[vlidx[3]], m_lep[vlidx[3]]);
                 FourVec l1234 = (l1 + l2) + (l3 + l4);
                 
                 return l1234.M();
             },
-            {"vlidx_4l", "PT_lep", "Eta_lep", "Phi_lep", "M_lep"}
+            {"vlidx_4l", "PT_lep", "Eta_lep", "Phi_lep", "M_lep", "PDGID_lep"}
         );
     }
-    
+  
+//   This code should be more accurate in terms of checking for an actual ZZ like event    
+//    if (!node.HasColumn("quad_zzlike")) {
+//        node = node.Define("quad_zzlike",
+//            [](const std::vector<int>& vlidx, const std::vector<int>& charge_lep,
+//               const std::vector<int>& pdgid_lep) -> bool {
+//                if (vlidx.size() < 4) return false;
+//                
+//                // Check if leptons can form 2 OSSF pairs (Ana.C ZZlikeEvent function)
+//                auto hasOSSF = [&](int i, int j) -> bool {
+//                    if (charge_lep[vlidx[i]] * charge_lep[vlidx[j]] < 0 &&
+//                        std::abs(pdgid_lep[vlidx[i]]) == std::abs(pdgid_lep[vlidx[j]])) {
+//                        return true;
+//                    }
+//                    return false;
+//                };
+                
+//                // Check all 3 possible pairings for 2 OSSF pairs
+//                if ((hasOSSF(0, 1) && hasOSSF(2, 3)) ||
+//                    (hasOSSF(0, 2) && hasOSSF(1, 3)) ||
+//                    (hasOSSF(0, 3) && hasOSSF(1, 2))) {
+//                    return true;
+//                }
+//                return false;
+//            },
+//            {"vlidx_4l", "Charge_lep", "PDGID_lep"}
+//        );
+//    }
+//
+//
     if (!node.HasColumn("quad_zzlike")) {
-        node = node.Define("quad_zzlike",
-            [](const std::vector<int>& vlidx, const std::vector<int>& charge_lep,
-               const std::vector<int>& pdgid_lep) -> bool {
-                if (vlidx.size() < 4) return false;
-                
-                // Check if leptons can form 2 OSSF pairs (Ana.C ZZlikeEvent function)
-                auto hasOSSF = [&](int i, int j) -> bool {
-                    if (charge_lep[vlidx[i]] * charge_lep[vlidx[j]] < 0 &&
-                        std::abs(pdgid_lep[vlidx[i]]) == std::abs(pdgid_lep[vlidx[j]])) {
-                        return true;
-                    }
-                    return false;
-                };
-                
-                // Check all 3 possible pairings for 2 OSSF pairs
-                if ((hasOSSF(0, 1) && hasOSSF(2, 3)) ||
-                    (hasOSSF(0, 2) && hasOSSF(1, 3)) ||
-                    (hasOSSF(0, 3) && hasOSSF(1, 2))) {
-                    return true;
-                }
-                return false;
-            },
-            {"vlidx_4l", "Charge_lep", "PDGID_lep"}
-        );
-    }
+	node = node.Define("quad_zzlike",
+           [](const std::vector<int>& charge_lep, const std::vector<int>& pdgid_lep,
+            const std::vector<int>& vlidx) -> bool {
+            if (vlidx.size() < 4) return false;
+            
+            // Get qf = charge * (11->1, 13->2) for each lepton
+            auto getQF = [&](int idx) -> int {
+                int pdg = std::abs(pdgid_lep[idx]);
+                int charge = charge_lep[idx];
+                if (pdg == 11) return charge;
+                else if (pdg == 13) return 2 * charge;
+                else return 0;
+            };
+            
+            int qf1 = getQF(vlidx[0]);
+            int qf2 = getQF(vlidx[1]);
+            int qf3 = getQF(vlidx[2]);
+            int qf4 = getQF(vlidx[3]);
+            
+            int code = std::abs(qf1) + std::abs(qf2) + std::abs(qf3) + std::abs(qf4);
+            return (code == 4 || code == 6 || code == 8);
+        },
+        {"Charge_lep", "PDGID_lep", "vlidx_4l"}
+    );
+}
+
+
     
     if (!node.HasColumn("quad_m4lzv_pass")) {
         node = node.Define("quad_m4lzv_pass",
@@ -591,14 +653,14 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
         node = node.Define("quad_mxcompmll",
             [](const std::vector<int>& vlidx, const std::vector<double>& pt_lep,
                const std::vector<double>& eta_lep, const std::vector<double>& phi_lep,
-               const std::vector<double>& m_lep) -> bool {
+               const std::vector<double>& m_lep, const std::vector<int>& pdgid_lep) -> bool {
                 if (vlidx.size() < 4) return false;
                 
                 // Reconstruct 4 leptons as FourVec (Ana.C lines 1034-1037)
-                FourVec l1 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[0]], eta_lep[vlidx[0]], phi_lep[vlidx[0]], m_lep[vlidx[0]]);
-                FourVec l2 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[1]], eta_lep[vlidx[1]], phi_lep[vlidx[1]], m_lep[vlidx[1]]);
-                FourVec l3 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[2]], eta_lep[vlidx[2]], phi_lep[vlidx[2]], m_lep[vlidx[2]]);
-                FourVec l4 = FourVec::FromPtEtaPhiM(11, pt_lep[vlidx[3]], eta_lep[vlidx[3]], phi_lep[vlidx[3]], m_lep[vlidx[3]]);
+                FourVec l1 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[0]], pt_lep[vlidx[0]], eta_lep[vlidx[0]], phi_lep[vlidx[0]], m_lep[vlidx[0]]);
+                FourVec l2 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[1]], pt_lep[vlidx[1]], eta_lep[vlidx[1]], phi_lep[vlidx[1]], m_lep[vlidx[1]]);
+                FourVec l3 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[2]], pt_lep[vlidx[2]], eta_lep[vlidx[2]], phi_lep[vlidx[2]], m_lep[vlidx[2]]);
+                FourVec l4 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[3]], pt_lep[vlidx[3]], eta_lep[vlidx[3]], phi_lep[vlidx[3]], m_lep[vlidx[3]]);
                 
                 // Build lepton vector for EventShape (Ana.C lines 1105-1106)
                 std::vector<FourVec> leptons;
@@ -626,7 +688,7 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
                 // Return true if cut passes (failsCut == 0)
                 return (failsCut == 0);
             },
-            {"vlidx_4l", "PT_lep", "Eta_lep", "Phi_lep", "M_lep"}
+            {"vlidx_4l", "PT_lep", "Eta_lep", "Phi_lep", "M_lep", "PDGID_lep"}
         );
     }
     

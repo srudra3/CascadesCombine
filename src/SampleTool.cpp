@@ -3,7 +3,7 @@
 SampleTool::SampleTool(){
   // Path to ntuples in fnal eos
   string pathPrefix = "root://cmseos.fnal.gov//store/user/lpcsusylep/";
-  pathPrefix += "NTUPLES_Cascades_v8/";
+  pathPrefix += "NTUPLES_Cascades_v4/";
 
   LumiDict["HEM_LUMI"] = 21.077794578; // need for HEM veto
   LumiDict["Summer16_102X"] = 16.8+19.5;
@@ -106,7 +106,12 @@ SampleTool::SampleTool(){
 
   LumiDict["Summer22_130X_Cascades"] = RUN2_TOTAL_LUMI + RUN3_TOTAL_LUMI;
   LumiDict["Summer23BPix_130X_Cascades"] = RUN2_TOTAL_LUMI + RUN3_TOTAL_LUMI;
-
+  MasterDict["ZZ_2022"] = {
+    pathPrefix + "Summer23BPix_130X/ZZto4L_TuneCP5_13p6TeV_powheg-pythia8_Summer23BPix_130X.root",
+  };
+  MasterDict["Cascades_180"] = {
+    pathPrefix + "Summer22_130X_Cascades/SlepSnuCascade_220-209_200-190-180_2022_NANO_JustinPrivateMC_Summer22_130X_Cascades_Summer22_130X.root",
+  };
   MasterDict["ttbar_2026"] = {
     pathPrefix + "Summer26_130X/TTG-1Jets_PTG-100to200_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8_Summer23BPix_Summer26_130X.root",
     pathPrefix + "Summer26_130X/TTG-1Jets_PTG-10to100_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8_Summer23BPix_Summer26_130X.root",
@@ -1008,6 +1013,10 @@ SampleTool::SampleTool(){
     pathPrefix + "Summer22_130X/ZZto2Nu2Q_TuneCP5_13p6TeV_powheg-pythia8_Summer22_130X.root",
     pathPrefix + "Summer22_130X/ZZto4L_TuneCP5_13p6TeV_powheg-pythia8_Summer22_130X.root",
   };
+
+  MasterDict["ZZTo4L_2022"] = {
+    pathPrefix + "Summer22_130X/ZZto4L_TuneCP5_13p6TeV_powheg-pythia8_Summer22_130X.root",
+  };
   MasterDict["TB_2022"] = {
     pathPrefix + "Summer22_130X/VH_HtoNonbb_M-125_TuneCP5_13p6TeV_amcatnloFXFX-madspin-pythia8_Summer22_130X.root",
     pathPrefix + "Summer22_130X/VHtoGG_M-125_TuneCP5_13p6TeV_amcatnloFXFX-madspin-pythia8_Summer22_130X.root",
@@ -1410,9 +1419,6 @@ SampleTool::SampleTool(){
     pathPrefix + "Summer23BPix_130X_Cascades/SlepSnuCascade_MN1-270_MN2-280_MC1-275_TuneCP5_13p6TeV_madgraphMLM-pythia8_Summer23BPix_130X.root",
   };
 
-  MasterDict["Cascades_180"] = {
-    pathPrefix + "Summer22_130X_Cascades/SlepSnuCascade_220-209_200-190-180_2022_NANO_JustinPrivateMC_Summer22_130X_Cascades_Summer22_130X.root"
-  };
 
   MasterDict["SMS_Gluinos"] = {
     //pathPrefix + "Fall17_102X_SMS/SMS-T1qqqq-compressedGluino_TuneCP2_13TeV-madgraphMLM-pythia8_Fall17_102X.root",
