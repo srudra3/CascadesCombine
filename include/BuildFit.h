@@ -53,6 +53,7 @@ class BuildFit{
     void AddMCStatProcByProc(const std::string& bin, JSONFactory* j);
     void AddPTISRSys(const stringlist& binset, const stringlist& procs);
     void AddSameSignSys(const stringlist& binset, const stringlist& procs);
+    void AddOSOFSys(const stringlist& binset, const stringlist& procs);
     void AddOSSFSys(const stringlist& binset, const stringlist& procs);
     void AddLepHemiSys(const stringlist& binset, const stringlist& procs);
     void AddRaSys(const stringlist& binset, const stringlist& procs);

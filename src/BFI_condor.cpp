@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
     };
 
     int opt, opt_index=0;
-    while ((opt = getopt_long(argc, argv, "b:f:o:c:l:p:st:u:n:m:Hy:J", long_options, &opt_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "b:f:o:c:l:p:st:S:u:n:m:N:Hy:d:JFO:M:L:P:U:B:R:h", long_options, &opt_index)) != -1) {
         switch(opt){
             case 'b': binArg=optarg; break;
             case 'f': rootFilePath=optarg; break;
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
             expanded.reserve(outCuts.size());
             for (const auto &c : outCuts) expanded.push_back(BFI->ExpandMacros(c));
             finalCutsExpandedMap[bin] = std::move(expanded);
-    
+
             // user-cuts: store per-bin list of user-cut *names* (they will be looked up in allUserCuts later)
             userCutsPerBin[bin] = splitSemicolon(userForBin);
         }
@@ -285,6 +285,22 @@ int main(int argc, char** argv) {
                          bool treeSystIsUp,
                          bool runFAKES // whether or not to use genmatching for adding FAKES procs
                         ) {
+        // precompute fake-key variants
+        std::string key_HFelec = key + "_FAKES_HFElec";
+        std::string key_HFmuon = key + "_FAKES_HFMuon";
+        std::string processName_HFelec = processName + "_FAKES_HFElec";
+        std::string processName_HFmuon = processName + "_FAKES_HFMuon";
+        std::string key_LFelec = key + "_FAKES_LFElec";
+        std::string key_LFmuon = key + "_FAKES_LFMuon";
+        std::string processName_LFelec = processName + "_FAKES_LFElec";
+        std::string processName_LFmuon = processName + "_FAKES_LFMuon";
+        std::map<std::string,std::string> map_key_to_process;
+        map_key_to_process.insert({key, processName});
+        map_key_to_process.insert({key_HFelec, processName_HFelec});
+        map_key_to_process.insert({key_HFmuon, processName_HFmuon});
+        map_key_to_process.insert({key_LFelec, processName_LFelec});
+        map_key_to_process.insert({key_LFmuon, processName_LFmuon});
+
         auto fillZeroJSONForBinProc = [&](const std::string &bin,
                                           const std::string &proc_key,
                                           const std::string &filePath,
@@ -322,22 +338,45 @@ int main(int argc, char** argv) {
                 }
             }
         };
+
+        if (!TreeExistsInFile(rootFilePath, tree_name)) {
+            std::cout << "[BFI_condor] Tree '" << tree_name
+                      << "' not found in file '" << rootFilePath
+                      << "'. Treating as empty.\n";
+
+            if (doJSON) {
+                for (const auto &bin : binNames) {
+
+                    std::vector<std::string> proc_keys;
+
+                    if (!runFAKES) {
+                        proc_keys.push_back(key);
+                    } else {
+                        proc_keys = {
+                            key_HFelec,
+                            key_HFmuon,
+                            key_LFelec,
+                            key_LFmuon,
+                            key
+                        };
+                    }
+
+                    for (const auto &proc_key : proc_keys) {
+                        fillZeroJSONForBinProc(
+                            bin,
+                            proc_key,
+                            rootFilePath,
+                            !treeSystTag.empty(),
+                            treeSystTag,
+                            treeSystIsUp
+                        );
+                    }
+                }
+            }
+
+            return;
+        }
     
-        // precompute fake-key variants
-        std::string key_HFelec = key + "_FAKES_HFElec";
-        std::string key_HFmuon = key + "_FAKES_HFMuon";
-        std::string processName_HFelec = processName + "_FAKES_HFElec";
-        std::string processName_HFmuon = processName + "_FAKES_HFMuon";
-        std::string key_LFelec = key + "_FAKES_LFElec";
-        std::string key_LFmuon = key + "_FAKES_LFMuon";
-        std::string processName_LFelec = processName + "_FAKES_LFElec";
-        std::string processName_LFmuon = processName + "_FAKES_LFMuon";
-        std::map<std::string,std::string> map_key_to_process;
-        map_key_to_process.insert({key, processName});
-        map_key_to_process.insert({key_HFelec, processName_HFelec});
-        map_key_to_process.insert({key_HFmuon, processName_HFmuon});
-        map_key_to_process.insert({key_LFelec, processName_LFelec});
-        map_key_to_process.insert({key_LFmuon, processName_LFmuon});
         if(!ROOT::IsImplicitMTEnabled()) ROOT::EnableImplicitMT();
 
         if(doHist) histFile->cd();
@@ -396,7 +435,7 @@ int main(int argc, char** argv) {
             }
             
             // Skip running if tree has zero events or bin era mismatch
-            if (binEraMismatch || nEntries <= 1) {
+            if (binEraMismatch || nEntries == 0) {
                 if(doJSON) {
                     // Build the same proc_key list
                     std::vector<std::string> proc_keys;

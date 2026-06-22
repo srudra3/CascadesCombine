@@ -20,11 +20,10 @@ for WS in "${dcdir}"/*/*_workspace.root; do
       -M FitDiagnostics \
       -d "$WSFILE" \
       -m "120" \
-      --robustFit 1 \
-      --robustHesse 1 \
-      --saveShapes \
       --skipSBFit \
+      --saveShapes \
       --saveWithUncertainties \
+      --robustHesse 1 \
       --saveNormalizations
     popd > /dev/null || exit 1
     break

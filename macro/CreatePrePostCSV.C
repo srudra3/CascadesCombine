@@ -1,3 +1,5 @@
+#include "TApplication.h"
+
 // based on https://github.com/Jphsx/ChisqDiagnostic/tree/master
 void CreatePrePostCSV(std::string inputDiagnostic, std::string csvname="prefit.csv"){
 	TFile* fitDiagnosticFile = TFile::Open(inputDiagnostic.c_str());
@@ -10,10 +12,16 @@ void CreatePrePostCSV(std::string inputDiagnostic, std::string csvname="prefit.c
 	
 	TH1F *b_prefit, *b_postfit;
 	int Nbins;
-	TGraphAsymmErrors *data;	
+	TGraphAsymmErrors *data;
+
+        std::string zscore_name = csvname;
+        zscore_name.replace(zscore_name.rfind(".csv"), 4, "_zscore.txt");       	
+        ofstream zscore_file;
+        zscore_file.open (zscore_name);
 	ofstream csvfile;
   	csvfile.open (csvname);
         csvfile<<"RegionName BinNumber bprefit bprefit_err bpostfit bpostfit_err data data_err"<<"\n";
+
 	for(int i=0; i<keyList->GetSize(); i++){
 		//do prefit
 		
@@ -30,8 +38,15 @@ void CreatePrePostCSV(std::string inputDiagnostic, std::string csvname="prefit.c
 			csvfile<<b_prefit->GetBinContent(j)<<" "<<b_prefit->GetBinError(j)<<" ";
 			csvfile<<b_postfit->GetBinContent(j)<<" "<<b_postfit->GetBinError(j)<<" ";
 			csvfile<<data->GetPointY(j-1)<<" "<<data->GetErrorY(j-1)<<"\n";
+
+                        zscore_file<<i+1<<" ";
+                        zscore_file<<keyList->At(i)->GetName()<<" ";
+                        zscore_file<<b_postfit->GetBinContent(j)<<" "<<b_postfit->GetBinError(j)<<" ";
+                        zscore_file<<data->GetPointY(j-1)<<"\n";
 		}
 	}
 	csvfile.close();
+        zscore_file.close();
 	//b_postfit->Draw();
+	gApplication->Terminate();
 }

@@ -132,7 +132,8 @@ def select_params(data, substrings=None, use_all=False):
     use_all: if True, select everything.
     """
     if use_all:
-        return list(data.get('params', []))
+        #return list(data.get('params', []))
+        return [p for p in data.get('params', []) if not p.get('name', '').startswith('prop_')] # ignore MC stats
     if not substrings:
         return []
     sel = []
@@ -206,6 +207,127 @@ def compute_plot_values(p, lnN_map, shape_map, absolute=True):
     # otherwise default: plot as pull
     return float(cen), float(err_lo), float(err_hi), 'pull'
 
+
+# ---------------------
+# Nuisance display label translation
+# Priority: LABEL_OVERRIDES (exact match) -> parse_nuisance_name (rules) -> raw name (fallback)
+# ---------------------
+
+# Hard-coded overrides for names that don't follow the standard pattern,
+# or where you want to force a specific label. Add entries here as needed.
+# Any name not listed here falls through to the rule-based parser below.
+LABEL_OVERRIDES = {
+    # Example irregular names -- populate as you encounter them:
+    # "some_weird_nuisance":  "#kappa_{weird}^{special}",
+    "scale_triboson":       "#kappa_{tri-boson}",
+}
+
+def parse_nuisance_name(name):
+    """
+    Rule-based conversion of a combine nuisance name to a TLatex display label.
+    Returns None if the name doesn't match any known pattern (triggers raw fallback).
+
+    Conventions:
+      Gaussian lnN   -> #kappa_{subscript}^{superscript}
+      Unconstrained  -> #theta_{subscript}^{superscript}
+    """
+
+    # --- Unconstrained rate params: scale_FAKES_<Era>_<LF|HF><Elec|Muon> ---
+    m = re.match(r'^scale_FAKES_(Run\d)_(LF|HF)(Elec|Muon)$', name)
+    if m:
+        era, hf, flavour = m.group(1), m.group(2), m.group(3)
+        era_str  = era.replace('Run', 'Run-')
+        flav_str = 'e' if flavour == 'Elec' else '#mu'
+        return f"#theta_{{Fakes}}^{{{era_str},{hf}{flav_str}}}"
+
+    # --- Other simple scale_ rate params: scale_<bkg> ---
+    m = re.match(r'^scale_(\w+)$', name)
+    if m:
+        bkg = m.group(1)
+        label = bkg.replace('diboson', 'di-boson').replace('triboson', 'tri-boson')
+        return f"#theta_{{{label}}}"
+
+    # --- All remaining names are expected to start with Run<N>_ ---
+    m = re.match(r'^(Run\d)_(.+)$', name)
+    if not m:
+        return None   # unrecognised, trigger fallback
+    era     = m.group(1)            # e.g. Run2
+    rest    = m.group(2)            # e.g. Btag_2L_0J_hPTISR
+    era_str = era.replace('Run', 'Run-')
+    tokens  = rest.split('_')
+    if not tokens:
+        return None
+
+    category  = tokens[0]
+    remainder = tokens[1:]
+
+    def token_to_str(t):
+        return {
+            'lPTISR': '-ISR',
+            'hPTISR': '+ISR',
+            'Silver': 'Silver',
+            'LFElec': 'LFe',
+            'HFElec': 'HFe',
+            'LFMuon': 'LF#mu',
+            'HFMuon': 'HF#mu',
+        }.get(t, t)   # 2L, 3L, 4L, 0J, 1J etc. pass through unchanged
+
+    def build_sub(toks):
+        return ','.join(token_to_str(t) for t in toks)
+
+    # --- Lepton ID / SIP3D: Run2_IDISO_LFElec, Run2_SIP3D_HFMuon, etc. ---
+    if category in ('IDISO', 'SIP3D') and remainder:
+        flav_token = '_'.join(remainder)
+        hf   = 'LF' if 'LF' in flav_token else 'HF'
+        flav = 'e' if 'Elec' in flav_token else '#mu'
+        return f"#kappa_{{{category}}}^{{{era_str},{hf}{flav}}}"
+
+    # --- LepHemi: Run2_4L_LepHemi ---
+    if category == '4L' and remainder and remainder[0] == 'LepHemi':
+        return f"#kappa_{{LepHemi}}^{{{era_str},4L}}"
+
+    # --- Standard categories ---
+    CAT_LABELS = {
+        'Btag':     'B-tag',
+        'PTISR':    'p_{T}^{ISR}',
+        'OSOF':     'OSOF',
+        'SameSign': 'SS',
+    }
+    if category not in CAT_LABELS:
+        return None   # unknown category, trigger fallback
+
+    cat_label = CAT_LABELS[category]
+    sub = build_sub(remainder)
+    # If the category label itself contains TLatex super/subscripts, use a flat format
+    # to avoid illegal nesting (e.g. p_{T}^{ISR} can't live inside ^{...})
+    if '^' in cat_label:
+        if sub:
+            return f"#kappa^{{{era_str},{sub}}}_{{{cat_label}}}"
+        else:
+            return f"#kappa^{{{era_str}}}_{{{cat_label}}}"
+    else:
+        if sub:
+            return f"#kappa_{{{cat_label}}}^{{{era_str},{sub}}}"
+        else:
+            return f"#kappa_{{{cat_label}}}^{{{era_str}}}"
+
+def get_display_label(name):
+    """
+    Three-step priority chain:
+      1. Hard-coded override in LABEL_OVERRIDES (exact match)
+      2. Rule-based parser (parse_nuisance_name)
+      3. Raw name fallback (prints a warning so you know to add it to LABEL_OVERRIDES)
+    """
+    if name in LABEL_OVERRIDES:
+        return LABEL_OVERRIDES[name]
+
+    parsed = parse_nuisance_name(name)
+    if parsed is not None:
+        return parsed
+
+    print(f"  [label] No rule matched '{name}' -- using raw name. Consider adding to LABEL_OVERRIDES.")
+    return name
+
 # ---------------------
 # ROOT plotting helpers
 # ---------------------
@@ -235,7 +357,7 @@ def make_graph_from_entries(entries, max_label_len=45, marker_style=20):
         ys[i] = float(cen)
         ylo[i] = float(dlo)
         yhi[i] = float(dhi)
-        labels.append(shorten_label(name, max_label_len))
+        labels.append(shorten_label(get_display_label(name), max_label_len))
         modes.append(mode)
 
     gr = ROOT.TGraphAsymmErrors(int(N),
@@ -284,18 +406,19 @@ def draw_impacts_graph(gr, labels, modes, entries, outbase, title="", ytitle=Non
     canvas_w = 1200
     canvas_h = max(600, 20 * N + 200)
     cv = ROOT.TCanvas(os.path.basename(outbase), os.path.basename(outbase), canvas_w, canvas_h)
-    cv.SetLeftMargin(0.06)
-    cv.SetRightMargin(0.06)
+    cv.SetLeftMargin(0.08)
+    cv.SetRightMargin(0.04)
     cv.SetTopMargin(0.06)
     cv.SetBottomMargin(0.2)
 
     # Draw an empty histogram frame to host axes and bin labels
     h = ROOT.TH1F("hframe_"+os.path.basename(outbase), "", N, 0.5, N + 0.5)
     h.GetYaxis().SetTitle(ytitle if ytitle else "")
-    h.GetYaxis().SetTitleSize(0.045)
-    h.GetYaxis().SetLabelSize(0.035)
+    h.GetYaxis().SetTitleSize(0.037)
+    h.GetYaxis().SetLabelSize(0.03)
     h.GetYaxis().SetNdivisions(405)
-    h.GetYaxis().SetTitleOffset(0.55)
+    h.GetYaxis().SetTitleOffset(0.92)
+    h.GetYaxis().CenterTitle()
     h.SetMinimum(ymin)
     h.SetMaximum(ymax)
     # set x-labels
@@ -346,7 +469,7 @@ def draw_impacts_graph(gr, labels, modes, entries, outbase, title="", ytitle=Non
     l.SetNDC()
     l.SetTextFont(42)
     l.SetTextSize(0.036)
-    l.DrawLatex(0.07, 0.96, "#bf{#it{CMS}} work-in-progress")
+    l.DrawLatex(0.07, 0.96, "#bf{#it{CMS}} Preliminary")
     #if title:
     #    l.SetTextSize(0.030)
     #    l.DrawLatex(0.02, 0.92, title)
@@ -449,9 +572,9 @@ def main():
     any_absolute = any(m in ('absolute', 'rateParam') for m in modes)
     any_pull = any(m == 'pull' for m in modes)
     if any_absolute and not any_pull:
-        ytitle = "postfit scale factor #pm uncertainty"
+        ytitle = "post-fit scale factor #pm uncertainty"
     elif any_pull and not any_absolute:
-        ytitle = "postfit pull (#theta) #pm uncertainty"
+        ytitle = "post-fit pull (#theta) #pm uncertainty"
     else:
         ytitle = "value (mix of pulls and absolute scale factors)"
 

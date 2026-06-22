@@ -625,6 +625,19 @@ def main(outdir: Path, dry_run=False, maratio_threshold=DEFAULT_MARATIO_THRESHOL
         subprocess.run(make_GSB_cmd, check=True, text=True)
     except Exception as e:
         print("skipping make_GSB_Regions.py (error calling it):", e)
+    # call generator for consolidations
+    try:
+        print("making region consolidations")
+        make_Consolidated_cmd_0 = ["python3", "python/make_Consolidated_Regions.py", "config/bin_cfgs/Regions_Run2_2L_0J_lPTISR_Silver.yaml", "config/bin_cfgs/Regions_Run2_2L_1J_hPTISR_Silver.yaml"]
+        subprocess.run(make_Consolidated_cmd_0, check=True, text=True)
+        make_Consolidated_cmd_1 = ["python3", "python/make_Consolidated_Regions.py", "config/bin_cfgs/Regions_Run3_2L_0J_lPTISR_Silver.yaml", "config/bin_cfgs/Regions_Run3_2L_1J_hPTISR_Silver.yaml"]
+        subprocess.run(make_Consolidated_cmd_1, check=True, text=True)
+        make_Consolidated_cmd_2 = ["python3", "python/make_Consolidated_Regions.py", "config/bin_cfgs/Regions_Run2_3L_Jincl_lPTISR_Silver.yaml", "config/bin_cfgs/Regions_Run2_3L_Jincl_hPTISR_Silver.yaml"]
+        subprocess.run(make_Consolidated_cmd_2, check=True, text=True)
+        make_Consolidated_cmd_3 = ["python3", "python/make_Consolidated_Regions.py", "config/bin_cfgs/Regions_Run3_3L_Jincl_lPTISR_Silver.yaml", "config/bin_cfgs/Regions_Run3_3L_Jincl_hPTISR_Silver.yaml"]
+        subprocess.run(make_Consolidated_cmd_3, check=True, text=True)
+    except Exception as e:
+        print("skipping make_Consolidated_Regions.py (error calling it):", e)
     print("DONE MAKING REGIONS YAMLS")
 
 if __name__ == "__main__":

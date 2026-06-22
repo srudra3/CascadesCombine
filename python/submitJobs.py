@@ -193,7 +193,7 @@ def main():
 
         # Build command that points createJobs at the group JSON (not the full master YAML)
         cmd = build_command(combined_bin_arg, first_cfg, bkg_processes, sig_processes, data_processes, sms_filters,
-                            make_json, make_root, args.make_cutflow, args.hist_yaml, lumi, run_dir, group_json_path, max_materialize)
+                            make_json, make_root, args.cutflow, args.hist_yaml, lumi, run_dir, group_json_path, max_materialize)
         jobs.append(cmd)
 
     # Write a bins_list file so downstream tools know the exact condor work dirs created.

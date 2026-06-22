@@ -9,23 +9,16 @@ ROOT.gROOT.SetBatch(True)
 # Configuration
 # ============================================================
 
-INPUT_ROOT = "runs/run_ANPlots_v15_May07_2026_1213/plots/output_final_hadded.root"
-OUTPUT_DIR = "runs/run_ANPlots_v15_May07_2026_1213/plots/pdfs/plots_with_boundaries"
+INPUT_ROOT = "runs/run_ANPlots_v16_May18_2026_1611/plots/output_final_hadded.root"
+OUTPUT_DIR = "runs/run_ANPlots_v16_May18_2026_1611/plots/pdfs/plots_with_boundaries"
 
 # ------------------------------------------------------------
 # Bin boundary definitions
 # ------------------------------------------------------------
-
 BOUNDARIES = {
-
-    # ========================================================
-    # 2L : RISRLEP vs Mperp_LEP
-    # ========================================================
     ("2L", "RISRLEP_vs_Mperp_LEP"): {
         "x_bins": [0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
-
-        # y boundaries per x-bin
-        # key = (xmin, xmax)
+        "y_presel_cut": None,
         "y_bins": {
             (0.7, 0.75): [25, 35],
             (0.75, 0.8): [20, 30],
@@ -35,26 +28,18 @@ BOUNDARIES = {
             (0.95, 1.0): [5, 15],
         }
     },
-
-    # ========================================================
-    # 3L : RISRLEP vs Mperp_LEP
-    # ========================================================
     ("3L", "RISRLEP_vs_Mperp_LEP"): {
         "x_bins": [0.7, 0.8, 0.9, 1.0],
-
+        "y_presel_cut": None,
         "y_bins": {
             (0.7, 0.8): [40],
             (0.8, 0.9): [35],
             (0.9, 1.0): [30],
         }
     },
-
-    # ========================================================
-    # 2L : RISRLEP vs PTISRLEP
-    # ========================================================
     ("2L", "RISRLEP_vs_PTISRLEP"): {
         "x_bins": [0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
-
+        "y_presel_cut": 250,
         "y_bins": {
             (0.7, 0.75): [250, 350],
             (0.75, 0.8): [250, 350],
@@ -64,13 +49,9 @@ BOUNDARIES = {
             (0.95, 1.0): [250, 350],
         }
     },
-
-    # ========================================================
-    # 3L : RISRLEP vs PTISRLEP
-    # ========================================================
     ("3L", "RISRLEP_vs_PTISRLEP"): {
         "x_bins": [0.7, 0.8, 0.9, 1.0],
-
+        "y_presel_cut": 200,
         "y_bins": {
             (0.7, 0.8): [200, 300],
             (0.8, 0.9): [200, 300],
@@ -109,13 +90,10 @@ def get_main_hist(canvas):
 
     return None
 
-
 def draw_boundaries(canvas, hist, config):
 
-    # color to shade regions not passing preselection
-    #shaded_color = ROOT.kGray + 1
     shaded_color = ROOT.kRed
-    shaded_percent = 0.3
+    shaded_percent = 1.
 
     x_axis = hist.GetXaxis()
     y_axis = hist.GetYaxis()
@@ -126,6 +104,8 @@ def draw_boundaries(canvas, hist, config):
     lines = []
     x_bins = config["x_bins"]
     x_bin_min = x_bins[0]
+    ROOT.gStyle.SetHatchesLineWidth(1)
+    ROOT.gStyle.SetHatchesSpacing(2)
 
     # --------------------------------------------------------
     # Shade excluded region (x < x_bin_min)
@@ -137,23 +117,21 @@ def draw_boundaries(canvas, hist, config):
             x_bin_min,
             y_max
         )
-        # Gray shading
         xbox.SetFillColorAlpha(shaded_color, shaded_percent)
-
-        xbox.SetLineWidth(0)
-        xbox.SetFillStyle(1001)
+        xbox.SetFillStyle(3354)
         xbox.Draw("same")
-
         lines.append(xbox)
 
     # --------------------------------------------------------
-    # Vertical boundaries (RISR)
+    # Vertical boundaries (RISR) -> start at y presel cut if defined
     # --------------------------------------------------------
+    y_presel_cut = config.get("y_presel_cut")
+    y_line_start = y_presel_cut if y_presel_cut is not None else y_min
 
     for x in x_bins[1:-1]:
-        line = ROOT.TLine(x, y_min, x, y_max)
-        line.SetLineStyle(2)  # dashed
-        line.SetLineWidth(2)
+        line = ROOT.TLine(x, y_line_start, x, y_max)
+        line.SetLineStyle(2)
+        line.SetLineWidth(3)
         line.Draw("same")
         lines.append(line)
 
@@ -161,55 +139,29 @@ def draw_boundaries(canvas, hist, config):
     x_plot_max = x_axis.GetXmax()
 
     # --------------------------------------------------------
-    # Shade excluded low-y region
+    # Shade excluded low-y region -> only if a presel cut is defined
     # --------------------------------------------------------
-
-    y_thresholds = [
-        yvals[0]
-        for yvals in config["y_bins"].values()
-    ]
-
-    global_ymin = min(y_thresholds)
-
-    if y_axis.GetXmin() < global_ymin:
-
-        shade_xmin = x_bin_min if x_axis.GetXmin() < x_bin_min else min(
-            xmin for (xmin, xmax) in config["y_bins"]
-        )
-
-        ybox = ROOT.TBox(
-            shade_xmin,
-            y_axis.GetXmin(),
-            x_axis.GetXmax(),
-            global_ymin
-        )
-
+    y_presel_cut = config.get("y_presel_cut")
+    if y_presel_cut is not None and y_presel_cut > y_min:
+        ybox = ROOT.TBox(x_bin_min, y_min, x_axis.GetXmax(), y_presel_cut)
         ybox.SetFillColorAlpha(shaded_color, shaded_percent)
-        ybox.SetFillStyle(1001)
-        ybox.SetLineWidth(0)
+        ybox.SetFillStyle(3354)
         ybox.Draw("same")
-
         lines.append(ybox)
 
     # --------------------------------------------------------
     # Horizontal boundaries
     # --------------------------------------------------------
-
     for (xmin, xmax), yvals in config["y_bins"].items():
-
         for y in yvals:
-            draw_xmin = x_bin_min if x_plot_min < x_bin_min else xmin
-
+            draw_xmin = max(xmin, x_bin_min)
             line = ROOT.TLine(draw_xmin, y, xmax, y)
             line.SetLineStyle(2)
-            line.SetLineWidth(2)
+            line.SetLineWidth(3)
             line.Draw("same")
-
             lines.append(line)
 
-    # Prevent garbage collection
     canvas._boundary_lines = lines
-
 
 # ============================================================
 # Main

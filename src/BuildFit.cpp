@@ -308,7 +308,7 @@ std::vector<std::string> BuildFit::WriteJsonAsFlatHists(
 
             // Write nominal histogram for non-data processes (CH expects process histos and data_obs)
             if (!isData) {
-                if (sumW <= 0.0 && err <= 0.0) {sumW = 1.e-9; err = 1.e-9;}
+                //if (sumW <= 0.0 && err <= 0.0) {sumW = 1.e-9; err = 1.e-9;}
                 TH1F *h = new TH1F(hname.c_str(), hname.c_str(), 1, 0, 1);
                 h->Sumw2();
                 h->SetBinContent(1, sumW);
@@ -552,6 +552,10 @@ void BuildFit::AddRaSys(const stringlist& binset, const stringlist& procs){
 void BuildFit::AddPTISRSys(const stringlist& binset, const stringlist& procs){
     cb.SetFlag("filters-use-regex", true);
 
+    // overall Run2 to Run3 PTISR factor
+    cb.cp().process(procs).bin({".*Run3.*_P.*"})
+        .AddSyst(cb, "Run3_PTISR", "lnN", SystMap<>::init(1.20));
+
     cb.cp().process(procs).bin({".*Run2.*2L.*0J.*P350.*"})
         .AddSyst(cb, "Run2_PTISR_2L_0J", "lnN", SystMap<>::init(1.10));
     cb.cp().process(procs).bin({".*Run2.*2L.*1J.*P350.*"})
@@ -559,18 +563,12 @@ void BuildFit::AddPTISRSys(const stringlist& binset, const stringlist& procs){
     cb.cp().process(procs).bin({".*Run2.*3L.*P300.*"})
         .AddSyst(cb, "Run2_PTISR_3L", "lnN", SystMap<>::init(1.10));
 
-    cb.cp().process(procs).bin({".*Run2.*2L.*Silver.*P350.*"})
-        .AddSyst(cb, "Run2_PTISR_2L_Silver", "lnN", SystMap<>::init(1.10));
-
     cb.cp().process(procs).bin({".*Run3.*2L.*0J.*P350.*"})
         .AddSyst(cb, "Run3_PTISR_2L_0J", "lnN", SystMap<>::init(1.10));
     cb.cp().process(procs).bin({".*Run3.*2L.*1J.*P350.*"})
         .AddSyst(cb, "Run3_PTISR_2L_1J", "lnN", SystMap<>::init(1.10));
     cb.cp().process(procs).bin({".*Run3.*3L.*P300.*"})
         .AddSyst(cb, "Run3_PTISR_3L", "lnN", SystMap<>::init(1.10));
-
-    cb.cp().process(procs).bin({".*Run3.*2L.*Silver.*P350.*"})
-        .AddSyst(cb, "Run3_PTISR_2L_Silver", "lnN", SystMap<>::init(1.10));
 
     cb.SetFlag("filters-use-regex", false);
 }
@@ -672,16 +670,35 @@ void BuildFit::AddSameSignSys(const stringlist& binset, const stringlist& procs)
     cb.SetFlag("filters-use-regex", false);
 }
 
+void BuildFit::AddOSOFSys(const stringlist& binset, const stringlist& procs){
+    cb.SetFlag("filters-use-regex", true);
+
+    cb.cp().process(procs).bin({".*Run2.*2L.*_OS_emu.*"})
+        .AddSyst(cb, "Run2_OSOF_2L", "lnN", SystMap<>::init(1.10));
+    cb.cp().process(procs).bin({".*Run3.*2L.*_OS_emu.*"})
+        .AddSyst(cb, "Run3_OSOF_2L", "lnN", SystMap<>::init(1.10));
+
+    cb.cp().process(procs).bin({".*Run2.*3L.*_OSOFa.*"})
+        .AddSyst(cb, "Run2_OSOF_3L", "lnN", SystMap<>::init(1.10));
+    cb.cp().process(procs).bin({".*Run3.*3L.*_OSOFa.*"})
+        .AddSyst(cb, "Run3_OSOF_3L", "lnN", SystMap<>::init(1.10));
+
+    cb.SetFlag("filters-use-regex", false);
+}
+
 void BuildFit::AddOSSFSys(const stringlist& binset, const stringlist& procs){
     cb.SetFlag("filters-use-regex", true);
-    cb.cp().process(procs).bin({".*Run2.*2L.*_OSSF.*"})
+
+    cb.cp().process(procs).bin({".*Run2.*2L.*_OS_(ee|mumu).*"})
         .AddSyst(cb, "Run2_OSSF_2L", "lnN", SystMap<>::init(1.10));
-    cb.cp().process(procs).bin({".*Run2.*3L.*_OSSF.*"})
-        .AddSyst(cb, "Run2_OSSF_3L", "lnN", SystMap<>::init(1.10));
-    cb.cp().process(procs).bin({".*Run3.*2L.*_OSSF.*"})
+    cb.cp().process(procs).bin({".*Run3.*2L.*_OS_(ee|mumu).*"})
         .AddSyst(cb, "Run3_OSSF_2L", "lnN", SystMap<>::init(1.10));
-    cb.cp().process(procs).bin({".*Run3.*3L.*_OSSF.*"})
+
+    cb.cp().process(procs).bin({".*Run2.*3L.*_OSSFa.*"})
+        .AddSyst(cb, "Run2_OSSF_3L", "lnN", SystMap<>::init(1.10));
+    cb.cp().process(procs).bin({".*Run3.*3L.*_OSSFa.*"})
         .AddSyst(cb, "Run3_OSSF_3L", "lnN", SystMap<>::init(1.10));
+
     cb.SetFlag("filters-use-regex", false);
 }
 
@@ -696,6 +713,7 @@ void BuildFit::AddLepHemiSys(const stringlist& binset, const stringlist& procs){
 
 void BuildFit::AddBtagSys(const stringlist& binset, const stringlist& procs){
     cb.SetFlag("filters-use-regex", true);
+
     cb.cp().process(procs).bin({".*Run2.*2L.*0J.*P250.*Btag.*"})
         .AddSyst(cb, "Run2_Btag_2L_0J_lPTISR", "lnN", SystMap<>::init(1.20));
     cb.cp().process(procs).bin({".*Run2.*2L.*0J.*P350.*Btag.*"})
@@ -704,8 +722,6 @@ void BuildFit::AddBtagSys(const stringlist& binset, const stringlist& procs){
         .AddSyst(cb, "Run2_Btag_2L_1J_lPTISR", "lnN", SystMap<>::init(1.20));
     cb.cp().process(procs).bin({".*Run2.*2L.*1J.*P350.*Btag.*"})
         .AddSyst(cb, "Run2_Btag_2L_1J_hPTISR", "lnN", SystMap<>::init(1.20));
-    cb.cp().process(procs).bin({".*Run2.*2L.*Silver.*P350.*Btag.*"})
-        .AddSyst(cb, "Run2_Btag_2L_Silver", "lnN", SystMap<>::init(1.20));
     cb.cp().process(procs).bin({".*Run2.*3L.*P200.*Btag.*"})
         .AddSyst(cb, "Run2_Btag_3L_lPTISR", "lnN", SystMap<>::init(1.20));
     cb.cp().process(procs).bin({".*Run2.*3L.*P300.*Btag.*"})
@@ -721,14 +737,13 @@ void BuildFit::AddBtagSys(const stringlist& binset, const stringlist& procs){
         .AddSyst(cb, "Run3_Btag_2L_1J_lPTISR", "lnN", SystMap<>::init(1.20));
     cb.cp().process(procs).bin({".*Run3.*2L.*1J.*P350.*Btag.*"})
         .AddSyst(cb, "Run3_Btag_2L_1J_hPTISR", "lnN", SystMap<>::init(1.20));
-    cb.cp().process(procs).bin({".*Run3.*2L.*Silver.*P350.*Btag.*"})
-        .AddSyst(cb, "Run3_Btag_2L_Silver", "lnN", SystMap<>::init(1.20));
     cb.cp().process(procs).bin({".*Run3.*3L.*P200.*Btag.*"})
         .AddSyst(cb, "Run3_Btag_3L_lPTISR", "lnN", SystMap<>::init(1.20));
     cb.cp().process(procs).bin({".*Run3.*3L.*P300.*Btag.*"})
         .AddSyst(cb, "Run3_Btag_3L_hPTISR", "lnN", SystMap<>::init(1.20));
     cb.cp().process(procs).bin({".*Run3.*4L.*Btag.*"})
         .AddSyst(cb, "Run3_Btag_4L", "lnN", SystMap<>::init(1.20));
+
     cb.SetFlag("filters-use-regex", false);
 }
 
@@ -778,7 +793,9 @@ void BuildFit::BuildFitSkeleton(JSONFactory* j, const std::string& signalPoint, 
     cb.FilterProcs([](ch::Process const *p){ return p->rate() <= 0; });
 
     // 6) Add Systematics
-    //cb.cp().SetAutoMCStats(cb, 0.); // Turn on autoMCstats
+    // Turn on autoMCstats
+    cb.cp().SetAutoMCStats(cb, 0.); // Second arg is event threshold
+
     // All non-triboson processes -> rateParam
     AddFakeFamiliesAsSharedNorms(
         truebkgprocs,
@@ -798,12 +815,12 @@ void BuildFit::BuildFitSkeleton(JSONFactory* j, const std::string& signalPoint, 
         "triboson",
         true    // include only triboson
     );
-    //AddFloatingNormsGroupedByFakeType(fakesprocs, "lnN", 1.2);
+
     AddFloatingNormsGroupedByFakeType(fakesprocs, "rateParam", 1.0);
     AddFAKETransferSys(kept_bins);
-    //AddSilverBronzeGlobal(truebkgprocs);
     AddPTISRSys(kept_bins, bkgprocs);
     AddSameSignSys(kept_bins, bkgprocs);
+    AddOSOFSys(kept_bins, bkgprocs);
     AddOSSFSys(kept_bins, bkgprocs);
     AddLepHemiSys(kept_bins, bkgprocs);
     AddBtagSys(kept_bins, bkgprocs);

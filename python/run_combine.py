@@ -45,7 +45,7 @@ def parse_args():
                    help="Stop after getting yields")
     p.add_argument("--bins-per-job", type=int, default=10,
                    help="Number of bins to group per job")
-    p.add_argument("--max-materialize", type=str, default="100",
+    p.add_argument("--max-materialize", type=str, default="50",
                    help="max number of jobs per cluster to condor")
     p.add_argument("--cutflow", action="store_true",
                    help="make cutflow hist")
@@ -275,6 +275,7 @@ def prepare_run_and_stage_assets_copy(
         "BuildFit.cpp",
     ]
     macro_items = [
+        "Zscore.x",
         "CollectSignificance.py",
         "launchLimits.sh",
         "launchSignificances.sh",
@@ -1079,96 +1080,91 @@ def main(args, run_info, try_acquire_lock_or_exit, start_time):
                 condor_time_end_BF = time.time()
                 condor_time_seconds_BF = condor_time_end_BF - condor_time_start_BF
 
-            # combine
-            # local
-            #subprocess.run(["bash", macro_dir+"/launchLimits.sh", output_dir, run_dir], check=True, stdout=sys.stdout, stderr=sys.stderr)
-            #subprocess.run(["bash", macro_dir+"/launchSignificances.sh", output_dir, run_dir], check=True, stdout=sys.stdout, stderr=sys.stderr)
-
-            # condor
-            print("[run_combine] Launching limit jobs...", flush=True)
-            condor_time_start_combine = time.time()
-            
-            for sig in signals:
-                limits_submit_cmd = [
-                    "python3", "python/submitCombineJobs.py",
-                    "--signal", sig,
-                    "--output-dir", output_dir,
-                    "--method", "AsymptoticLimits",
-                    "--extra-args", "-n .limit",
-                ]
-                subprocess.run(limits_submit_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
-            
-            print("[run_combine] Launched limit jobs", flush=True)
-            
-            if len(signals) < 20: # don't run significance for all points
-                print("[run_combine] Launching significance jobs...", flush=True)
+            if not make_FD and not make_impacts:
+                print("[run_combine] Launching limit jobs...", flush=True)
+                condor_time_start_combine = time.time()
+                
                 for sig in signals:
-                    significances_submit_cmd = [
+                    limits_submit_cmd = [
                         "python3", "python/submitCombineJobs.py",
                         "--signal", sig,
                         "--output-dir", output_dir,
-                        "--method", "Significance",
-                        "--extra-args", "-n .Test --expectSignal=1 -t -1",
+                        "--method", "AsymptoticLimits",
+                        "--extra-args", "-n .limit",
                     ]
-                    subprocess.run(significances_submit_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
+                    subprocess.run(limits_submit_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
                 
-                print("[run_combine] Launched significance jobs", flush=True)
-            
-            # Wait once for ALL combine jobs
-            print("[run_combine] Waiting for combine jobs...", flush=True)
-            wait_for_jobs(work_dirs=signals, condor=output_dir)
+                print("[run_combine] Launched limit jobs", flush=True)
+                
+                if len(signals) < 20: # don't run significance for all points
+                    print("[run_combine] Launching significance jobs...", flush=True)
+                    for sig in signals:
+                        significances_submit_cmd = [
+                            "python3", "python/submitCombineJobs.py",
+                            "--signal", sig,
+                            "--output-dir", output_dir,
+                            "--method", "Significance",
+                            "--extra-args", "-n .Test --expectSignal=1 -t -1",
+                        ]
+                        subprocess.run(significances_submit_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
+                    
+                    print("[run_combine] Launched significance jobs", flush=True)
+                
+                # Wait once for ALL combine jobs
+                print("[run_combine] Waiting for combine jobs...", flush=True)
+                wait_for_jobs(work_dirs=signals, condor=output_dir)
 
-            # Check limits
-            ok = run_checkjobs_loop_parallel_Combine(
-                condor_dir=output_dir,
-                work_dirs=signals,
-                checker="python/checkJobsCombine.py",
-                checker_args=["--method", "AsymptoticLimits"],
-                no_resubmit=False,
-                max_resubmits=args.max_resubmits,
-            )
-            
-            if not ok:
-                print("[run_combine] Limit combine jobs failed. Aborting.", file=sys.stderr)
-                sys.exit(1)
-            
-            if len(signals) < 20: # don't run significance for all points
-                # Check significances
+                # Check limits
                 ok = run_checkjobs_loop_parallel_Combine(
                     condor_dir=output_dir,
                     work_dirs=signals,
                     checker="python/checkJobsCombine.py",
-                    checker_args=["--method", "Significance"],
+                    checker_args=["--method", "AsymptoticLimits"],
                     no_resubmit=False,
                     max_resubmits=args.max_resubmits,
                 )
                 
                 if not ok:
-                    print("[run_combine] Significance combine jobs failed. Aborting.", file=sys.stderr)
+                    print("[run_combine] Limit combine jobs failed. Aborting.", file=sys.stderr)
                     sys.exit(1)
-            
-            condor_time_end_combine = time.time()
-            condor_time_seconds_combine = condor_time_end_combine - condor_time_start_combine
+                
+                if len(signals) < 20: # don't run significance for all points
+                    # Check significances
+                    ok = run_checkjobs_loop_parallel_Combine(
+                        condor_dir=output_dir,
+                        work_dirs=signals,
+                        checker="python/checkJobsCombine.py",
+                        checker_args=["--method", "Significance"],
+                        no_resubmit=False,
+                        max_resubmits=args.max_resubmits,
+                    )
+                    
+                    if not ok:
+                        print("[run_combine] Significance combine jobs failed. Aborting.", file=sys.stderr)
+                        sys.exit(1)
+                
+                condor_time_end_combine = time.time()
+                condor_time_seconds_combine = condor_time_end_combine - condor_time_start_combine
 
-            print("[run_combine] Launching CollectLimits...", flush=True)
-            subprocess.run(["bash", macro_dir+"/launchCollectLimits.sh", output_dir, run_dir], check=True, stdout=sys.stdout, stderr=sys.stderr)
+                print("[run_combine] Launching CollectLimits...", flush=True)
+                subprocess.run(["bash", macro_dir+"/launchCollectLimits.sh", output_dir, run_dir], check=True, stdout=sys.stdout, stderr=sys.stderr)
 
-            # collect significances
-            if len(signals) < 20: # don't run significance for all points
-                try:
-                    print("[run_combine] Collecting significances...", flush=True)
-                    subprocess.run(["python3", "-u", macro_dir+"/CollectSignificance.py", output_dir, run_dir], check=True, stdout=sys.stdout, stderr=sys.stderr)
-                except Exception: # typical failure is because a signal process has 0 events in any bins
-                    pass
+                # collect significances
+                if len(signals) < 20: # don't run significance for all points
+                    try:
+                        print("[run_combine] Collecting significances...", flush=True)
+                        subprocess.run(["python3", "-u", macro_dir+"/CollectSignificance.py", output_dir, run_dir], check=True, stdout=sys.stdout, stderr=sys.stderr)
+                    except Exception: # typical failure is because a signal process has 0 events in any bins
+                        pass
 
-                # plot significances
-                plot_cmd = [
-                    "./"+exe_dir+"/PlotSignificances.x",
-                    "-i", run_dir+"/Significance_datacards.txt",
-                    "-o", plots_dir
-                ]
-                print("[run_combine] Plotting significances with command:", " ".join(plot_cmd), flush=True)
-                subprocess.run(plot_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
+                    # plot significances
+                    plot_cmd = [
+                        "./"+exe_dir+"/PlotSignificances.x",
+                        "-i", run_dir+"/Significance_datacards.txt",
+                        "-o", plots_dir
+                    ]
+                    print("[run_combine] Plotting significances with command:", " ".join(plot_cmd), flush=True)
+                    subprocess.run(plot_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
 
             # Note impacts, T2W, and FD in macro only run on first signal
             if make_impacts or make_FD:
@@ -1257,8 +1253,16 @@ def main(args, run_info, try_acquire_lock_or_exit, start_time):
                         "-b",
                         f'macro/CreatePrePostCSV.C("{FD_file}","{FD_file.replace(".Test.root","CSV.csv")}")'
                     ]
+                    print("[run_combine] Making csv/zscore files with command:", " ".join(FD_CSV_cmd), flush=True)
                     subprocess.run(FD_CSV_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
-
+                    FD_Zscore_cmd = [
+                        "./"+macro_dir+"/Zscore.x",
+                        "-f 2",
+                        "-i", f'{FD_file.replace(".Test.root","CSV_zscore.txt")}',
+                        "-o", output_dir+"/"+str(signals[0]),
+                    ]
+                    print("[run_combine] Running Zscore exe with command:", " ".join(FD_Zscore_cmd), flush=True)
+                    subprocess.run(FD_Zscore_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
 
     # Clean up tar
     if not args.only_yields and make_json:
@@ -1287,8 +1291,9 @@ def main(args, run_info, try_acquire_lock_or_exit, start_time):
                 idle_time_seconds_BF, idle_time_seconds_BF/60, idle_time_seconds_BF/3600), flush=True)
             print("Total for BF condor processing: {0:.2f} seconds = {1:.2f} minutes = {2:.2f} hours".format(
                 condor_time_seconds_BF, condor_time_seconds_BF/60, condor_time_seconds_BF/3600), flush=True)
-        print("Total for combine condor processing: {0:.2f} seconds = {1:.2f} minutes = {2:.2f} hours".format(
-            condor_time_seconds_combine, condor_time_seconds_combine/60, condor_time_seconds_combine/3600), flush=True)
+        if not make_FD and not make_impacts:
+            print("Total for combine condor processing: {0:.2f} seconds = {1:.2f} minutes = {2:.2f} hours".format(
+                condor_time_seconds_combine, condor_time_seconds_combine/60, condor_time_seconds_combine/3600), flush=True)
     print("Total time: {0:.2f} seconds = {1:.2f} minutes = {2:.2f} hours".format(
         total_time_seconds, total_time_seconds/60, total_time_seconds/3600), flush=True)
 
