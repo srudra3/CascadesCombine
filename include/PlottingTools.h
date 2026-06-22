@@ -21,7 +21,7 @@ void Plot_Hist1D(TH1* h) {
     else
         proc_title = m_Title[ExtractProcName(proc_title)];
     l.SetTextSize(0.035); l.DrawLatex(0.57,0.943,proc_title.c_str());
-    l.SetTextSize(0.04); l.DrawLatex(0.01,0.943,"#bf{CMS} Simulation Preliminary");
+    l.SetTextSize(0.04); l.DrawLatex(0.01,0.943,CMS_label.c_str());
     l.SetTextSize(0.045); l.DrawLatex(0.7,0.04,ExtractBinName(title).c_str());
     TString pdfName = Form("%spdfs/%s/%s.pdf", outputDir.c_str(), ExtractBinName(title).c_str(), title.c_str());
     gErrorIgnoreLevel = 1001;
@@ -67,7 +67,7 @@ void Plot_Hist2D(TH2* h) {
     l.DrawLatex(right, 0.92, proc_title.c_str());
     // --- Left-aligned (CMS label) ---
     l.SetTextAlign(11);   // left-align horizontally, top-align vertically
-    l.DrawLatex(left, 0.92, "#bf{CMS} Simulation Preliminary");
+    l.DrawLatex(left, 0.92, CMS_label.c_str());
     //l.SetTextSize(0.045); l.DrawLatex(0.7,0.04,bin_label.c_str());
     TString pdfName = Form("%spdfs/%s/%s.pdf", outputDir.c_str(), ExtractBinName(title).c_str(), title.c_str());
     gErrorIgnoreLevel = 1001;
@@ -137,7 +137,7 @@ void Plot_Ratio(TH1* h, const std::string& outputDir, const RatioDef* rDef=nullp
     else
         proc_title = m_Title[ExtractProcName(proc_title)];
     //l.SetTextSize(0.035); l.DrawLatex(0.65,0.943,proc_title.c_str());
-    l.SetTextSize(0.04);  l.DrawLatex(0.13,0.943,"#bf{CMS} Simulation Preliminary");
+    l.SetTextSize(0.04);  l.DrawLatex(0.13,0.943,CMS_label.c_str());
     //l.SetTextSize(0.045); l.DrawLatex(0.7,0.04,ExtractBinName(title).c_str());
 
     // Output file
@@ -191,7 +191,7 @@ void Plot_Eff(TEfficiency* e){
     else
         proc_title = m_Title[ExtractProcName(proc_title)];
     l.SetTextSize(0.035); l.DrawLatex(0.65,0.943,proc_title.c_str());
-    l.SetTextSize(0.04); l.DrawLatex(0.01,0.943,"#bf{CMS} Simulation Preliminary");
+    l.SetTextSize(0.04); l.DrawLatex(0.01,0.943,CMS_label.c_str());
     l.SetTextSize(0.045); l.DrawLatex(0.7,0.04,ExtractBinName(title).c_str());
     gSystem->mkdir(Form("%spdfs/%s/", outputDir.c_str(), ExtractBinName(title).c_str()));
     TString pdfName = Form("%spdfs/%s/%s.pdf", outputDir.c_str(), ExtractBinName(title).c_str(), title.c_str());
@@ -211,7 +211,10 @@ void Plot_Stack(const string& hname,
                 TH1* dataHist = nullptr,
                 double signal_boost = 1.0,
                 bool isFD_Stack = false,
-                const std::string& groupTitle = ""
+                const std::string& groupTitle = "",
+                const std::unordered_map<std::string, const YamlBinPattern*>& binLookup = {},
+                const std::map<std::string, std::set<int>>& risrNeighborMap = {},
+                const YamlBinPattern* groupPattern = {}
                )
 {
     if (bkgHists.empty() && (sigHists.empty() || !dataHist)) return;
@@ -261,7 +264,8 @@ void Plot_Stack(const string& hname,
     }
     can->SetBottomMargin(hbo);
     can->SetTopMargin(hto);
-    can->SetGridx(); can->SetGridy();
+    //can->SetGridx();
+    can->SetGridy();
     can->cd();
     TPad* pad_top = nullptr;
     if(h_DATA){
@@ -269,7 +273,7 @@ void Plot_Stack(const string& hname,
         pad_top->SetBottomMargin(0.01);
         pad_top->SetLeftMargin(can->GetLeftMargin());
         pad_top->SetRightMargin(can->GetRightMargin());
-        pad_top->SetGridx(true);
+        //pad_top->SetGridx(true);
         pad_top->SetGridy(true);
         pad_top->Draw();
         pad_top->cd();
@@ -340,7 +344,7 @@ void Plot_Stack(const string& hname,
         pad_ratio->SetBottomMargin(0.35);
         pad_ratio->SetLeftMargin(can->GetLeftMargin());
         pad_ratio->SetRightMargin(can->GetRightMargin());
-        pad_ratio->SetGridx(true);
+        //pad_ratio->SetGridx(true);
         pad_ratio->SetGridy(true);
         pad_ratio->Draw();
         pad_ratio->cd();
@@ -473,7 +477,7 @@ void Plot_Stack(const string& hname,
     double ytop = mtop + 0.01;
     
     l.SetTextAlign(11);
-    l.DrawLatex(xmin, ytop, "#bf{CMS} Simulation Preliminary");
+    l.DrawLatex(xmin, ytop, CMS_label.c_str());
     l.SetTextAlign(31);
     const std::string& plotTitle = (isFD_Stack && !groupTitle.empty())
                                ? groupTitle
@@ -491,7 +495,7 @@ void Plot_Stack(const string& hname,
         // Enlarge bottom margin on the canvas to fit brackets.
         can->SetBottomMargin(hbo * 1.55);
         can->Modified();
-        DrawBinAxisBrackets(labelPad, labelAxisHist, currentSortedBins);
+        DrawBinAxisBrackets(labelPad, labelAxisHist, currentSortedBins, binLookup, risrNeighborMap, groupPattern);
     }
 
     if(outFile){ outFile->cd(); can->Write(0, TObject::kWriteDelete); }
@@ -512,6 +516,9 @@ void PlotMergedStack(const std::string&       mergedName,
                      const CombinedBinHists&  mergedHists,
                      const YamlBinPattern&    pattern,
                      const std::vector<std::string>& binNames,
+                     const std::unordered_map<std::string, const YamlBinPattern*>& binLookup,
+                     const std::map<std::string, std::set<int>>& risrNeighborMap,
+                     const YamlBinPattern* groupPattern,
                      double signalBoost = 1.0)
 {
     StackPlotInput stackInput = ConvertToStackInput(mergedHists);
@@ -525,11 +532,11 @@ void PlotMergedStack(const std::string&       mergedName,
                  : stackInput.dataHist;
     std::vector<std::string> sortedBins = anyHist ? RecoverBinLabels(anyHist)
                                                    : binNames;
-    BracketTierSet tiers = BuildBracketTiers(sortedBins);
-    std::string groupTitle = BuildGroupTitle(pattern, tiers, binNames);
+    BracketTierSet tiers = BuildBracketTiers(sortedBins, binLookup, risrNeighborMap, groupPattern);
+    std::string groupTitle = BuildGroupTitle(pattern, tiers, binNames, binLookup);
 
     Plot_Stack(mergedName, stackInput.bkgHists, stackInput.sigHists,
-               stackInput.dataHist, signalBoost, true, groupTitle);
+               stackInput.dataHist, signalBoost, true, groupTitle, binLookup, risrNeighborMap, groupPattern);
 }
 
 void Plot_Overlay(const std::string& hname,
@@ -693,8 +700,7 @@ void Plot_Overlay(const std::string& hname,
     l.SetTextFont(42);
     l.SetTextSize(textsize);
     l.SetTextAlign(11);
-    l.DrawLatex(can->GetLeftMargin(), 0.943,
-                "#bf{CMS} Simulation Preliminary");
+    l.DrawLatex(can->GetLeftMargin(), 0.943, CMS_label.c_str());
 
     l.SetTextAlign(31);
     //l.DrawLatex(1.0 - can->GetRightMargin(), 0.943, ExtractBinName(axisHist->GetName()).c_str());
@@ -867,7 +873,7 @@ void Plot_CutFlow(const std::string &hname,
     l.SetNDC();
     l.SetTextSize(0.04);
     l.SetTextFont(42);
-    l.DrawLatex(0.09,0.943,"#bf{CMS} Simulation Preliminary");
+    l.DrawLatex(0.09,0.943,CMS_label.c_str());
     l.DrawLatex(0.69,0.943,ExtractBinName(string(axisHist->GetName())).c_str());
 
     // Save
@@ -1022,7 +1028,7 @@ void Plot_Eff_Multi(const std::string& groupName,
     // TLatex: CMS on top-left; group info on top-right
     TLatex l; l.SetNDC(); l.SetTextFont(42);
     l.SetTextSize(0.04);
-    l.DrawLatex(0.12, 0.943, "#bf{CMS} Simulation Preliminary");
+    l.DrawLatex(0.12, 0.943, CMS_label.c_str());
 
     // top-right: show what this group is (Bin or Process)
     std::string topRight;
@@ -1149,7 +1155,7 @@ void Plot_Hist2DScatter(const std::string& hname,
     l.SetNDC();
     l.SetTextFont(42);
     l.SetTextSize(0.04);
-    l.DrawLatex(0.12, 0.943, "#bf{CMS} Simulation Preliminary");
+    l.DrawLatex(0.12, 0.943, CMS_label.c_str());
 
     l.SetTextSize(0.045);
     l.DrawLatex(0.69, 0.943, ExtractBinName(axisHist->GetName()).c_str());
@@ -1295,7 +1301,7 @@ void Plot_Hist2DContour(const std::string& hname,
     l.SetNDC();
     l.SetTextFont(42);
     l.SetTextSize(0.04);
-    l.DrawLatex(0.1, 0.943, "#bf{CMS} Simulation Preliminary");
+    l.DrawLatex(0.1, 0.943, CMS_label.c_str());
 
     l.SetTextSize(0.045);
     //l.DrawLatex(0.69, 0.943, ExtractBinName(axisHist->GetName()).c_str());
@@ -1706,7 +1712,7 @@ void Plot_EventCount2D(TH2* h, const std::string &mode,
 
     TLatex l; l.SetNDC(); l.SetTextFont(42);
     l.SetTextSize(0.04);
-    l.DrawLatex(0.13, 0.947, "#bf{CMS} Simulation Preliminary");
+    l.DrawLatex(0.13, 0.947, CMS_label.c_str());
 
     // Save canvas
     TString pdfName = Form("%s/pdfs/%s.pdf", outputDir.c_str(), h->GetName());

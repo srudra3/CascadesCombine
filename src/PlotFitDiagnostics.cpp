@@ -81,6 +81,9 @@ int main(int argc, char* argv[]) {
     }
 
     YamlConfig cfg = LoadYamlConfig(patternFile);
+    auto binLookup = BuildBinLookup(cfg);
+    auto risrNeighborMap = BuildRISRNeighborMap(cfg);
+
     if (patternFile.empty()) { std::cout << "[PlotFitDiagnostics] NEED TO SUPPLY CONFIG FILE FOR RULES\n"; return 1; }
     vector<MergedBinGroup> groups = BuildMergedBinGroupsFromYaml(allBinNames, cfg);
     for (const auto& g : groups)
@@ -89,7 +92,7 @@ int main(int argc, char* argv[]) {
     for (const auto& grp : groups) {
         CombinedBinHists mergedHists = LoadAndCombineBinHists(
             fitDir, grp.group_name, grp.bin_names, cfg.process_merges);
-        PlotMergedStack(treeName+"_"+grp.group_name, mergedHists, grp.pattern, grp.bin_names);
+        PlotMergedStack(treeName+"_"+grp.group_name, mergedHists, grp.pattern, grp.bin_names, binLookup, risrNeighborMap, &grp.pattern);
     }
     cout << "[PlotFitDiagnostics] All plots saved in: " << outputDir << endl;
     return 0;

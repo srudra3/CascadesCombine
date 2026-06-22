@@ -22,13 +22,10 @@ run_all() {
     fi
 }
 SLEEP=70
-VERSION="v402"
+VERSION="v408"
 make clean
 make all -j 8
 echo "Submitting Regions..."
-
-#run_all --make-root --processes-cfg config/process_cfgs/LepEtaStudy_processes.yaml --hist-cfg config/hist_cfgs/LepEtaStudy.yaml --bins-cfg config/bin_cfgs/LepEtaStudy.yaml --run-name LepEtaStudy_v15
-#sleep ${SLEEP}
 
 # Call script to make regions
 python3 python/make_Regions.py
@@ -42,17 +39,15 @@ cat config/bin_cfgs/Regions_Run2_2L_0J_lPTISR_Gold.yaml >> config/bin_cfgs/Regio
 cat config/bin_cfgs/Regions_Run2_2L_0J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_2L_1J_lPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_2L_1J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run2.yaml
-cat config/bin_cfgs/Regions_Run2_2L_lPTISR_Silver.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_2L_0J_hPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_2L_0J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_2L_1J_hPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_2L_1J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run2.yaml
-cat config/bin_cfgs/Regions_Run2_2L_hPTISR_Silver.yaml >> config/bin_cfgs/Regions_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_2L_Silver.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_3L_Jincl_lPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run2.yaml
-cat config/bin_cfgs/Regions_Run2_3L_Jincl_lPTISR_Silver.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_3L_Jincl_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_3L_Jincl_hPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run2.yaml
-cat config/bin_cfgs/Regions_Run2_3L_Jincl_hPTISR_Silver.yaml >> config/bin_cfgs/Regions_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_3L_Jincl_Silver.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_3L_Jincl_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_4L_Gold.yaml >> config/bin_cfgs/Regions_Run2.yaml
 cat config/bin_cfgs/Regions_Run2_4L_Silver.yaml >> config/bin_cfgs/Regions_Run2.yaml
@@ -65,17 +60,15 @@ cat config/bin_cfgs/Regions_Run3_2L_0J_lPTISR_Gold.yaml >> config/bin_cfgs/Regio
 cat config/bin_cfgs/Regions_Run3_2L_0J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_2L_1J_lPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_2L_1J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run3.yaml
-cat config/bin_cfgs/Regions_Run3_2L_lPTISR_Silver.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_2L_0J_hPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_2L_0J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_2L_1J_hPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_2L_1J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run3.yaml
-cat config/bin_cfgs/Regions_Run3_2L_hPTISR_Silver.yaml >> config/bin_cfgs/Regions_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_2L_Silver.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_3L_Jincl_lPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run3.yaml
-cat config/bin_cfgs/Regions_Run3_3L_Jincl_lPTISR_Silver.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_3L_Jincl_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_3L_Jincl_hPTISR_Gold.yaml >> config/bin_cfgs/Regions_Run3.yaml
-cat config/bin_cfgs/Regions_Run3_3L_Jincl_hPTISR_Silver.yaml >> config/bin_cfgs/Regions_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_3L_Jincl_Silver.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_3L_Jincl_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_4L_Gold.yaml >> config/bin_cfgs/Regions_Run3.yaml
 cat config/bin_cfgs/Regions_Run3_4L_Silver.yaml >> config/bin_cfgs/Regions_Run3.yaml
@@ -89,11 +82,11 @@ cat config/bin_cfgs/Regions_Run3.yaml >> config/bin_cfgs/Regions.yaml
 
 # Set BPJ to % of total
 BIN_COUNT=$(grep -c 'Bin' config/bin_cfgs/Regions.yaml)
-BINS_PER_JOB=$(awk -v n="$BIN_COUNT" 'BEGIN { printf "%d\n", n*0.05 + 0.5 }')
+BINS_PER_JOB=$(awk -v n="$BIN_COUNT" 'BEGIN { printf "%d\n", n*0.02 + 0.5 }')
 
 # Run2+Run3 Sensitivity
-#run_all --make-json --skip-compile --bins-cfg config/bin_cfgs/Regions.yaml --bins-per-job ${BINS_PER_JOB} --run-name Cascades_Regions_234L_Run2Run3_${VERSION}
-#sleep ${SLEEP}
+run_all --make-json --skip-compile --bins-cfg config/bin_cfgs/Regions.yaml --bins-per-job ${BINS_PER_JOB} --run-name Cascades_Regions_234L_Run2Run3_${VERSION}
+sleep ${SLEEP}
 
 # Run2 Only Sensitivity
 #run_all --make-json --skip-compile --processes-cfg config/process_cfgs/processes_Run2.yaml --bins-cfg config/bin_cfgs/Regions_Run2.yaml --bins-per-job ${BINS_PER_JOB} --run-name Cascades_Regions_234L_Run2_${VERSION}
@@ -120,36 +113,48 @@ BINS_PER_JOB=$(awk -v n="$BIN_COUNT" 'BEGIN { printf "%d\n", n*0.05 + 0.5 }')
 #sleep ${SLEEP}
 
 # CR Fit
+rm -f config/bin_cfgs/Regions_CR_Run2.yaml # Clean up yaml
+rm -f config/bin_cfgs/Regions_CR_Run3.yaml # Clean up yaml
 rm -f config/bin_cfgs/Regions_CR.yaml # Clean up yaml
-cat config/bin_cfgs/Regions_Run2_2L_0J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_2L_1J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_2L_lPTISR_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_2L_0J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_2L_1J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_2L_hPTISR_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_3L_Jincl_lPTISR_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_3L_Jincl_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_3L_Jincl_hPTISR_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_3L_Jincl_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_4L_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_4L_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_top_sideband_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run2_top_sideband_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_2L_0J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_2L_1J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_2L_lPTISR_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_2L_0J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_2L_1J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_2L_hPTISR_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_3L_Jincl_lPTISR_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_3L_Jincl_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_3L_Jincl_hPTISR_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_3L_Jincl_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_4L_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_4L_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_top_sideband_Silver.yaml >> config/bin_cfgs/Regions_CR.yaml
-cat config/bin_cfgs/Regions_Run3_top_sideband_Bronze.yaml >> config/bin_cfgs/Regions_CR.yaml
 
+cat config/bin_cfgs/Regions_Run2_2L_0J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_2L_1J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_2L_0J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_2L_1J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_2L_Silver.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_3L_Jincl_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_3L_Jincl_Silver.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_3L_Jincl_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_4L_Silver.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_4L_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_top_sideband_Silver.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+cat config/bin_cfgs/Regions_Run2_top_sideband_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run2.yaml
+
+cat config/bin_cfgs/Regions_Run3_2L_0J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_2L_1J_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_2L_0J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_2L_1J_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_2L_Silver.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_3L_Jincl_lPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_3L_Jincl_Silver.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_3L_Jincl_hPTISR_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_4L_Silver.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_4L_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_top_sideband_Silver.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+cat config/bin_cfgs/Regions_Run3_top_sideband_Bronze.yaml >> config/bin_cfgs/Regions_CR_Run3.yaml
+
+cat config/bin_cfgs/Regions_CR_Run2.yaml >> config/bin_cfgs/Regions_CR.yaml
+cat config/bin_cfgs/Regions_CR_Run3.yaml >> config/bin_cfgs/Regions_CR.yaml
+
+# Run2 Only CR Fit
+run_all --skip-plot-yields --make-impacts --make-FD --processes-cfg config/process_cfgs/data_processes_Run2.yaml --make-json --skip-compile --bins-cfg config/bin_cfgs/Regions_CR_Run2.yaml --bins-per-job ${BINS_PER_JOB} --run-name Cascades_CRFit_Impacts_FD_234L_Run2_${VERSION}
+sleep ${SLEEP}
+
+# Run3 Only CR Fit
+run_all --skip-plot-yields --make-impacts --make-FD --processes-cfg config/process_cfgs/data_processes_Run3.yaml --make-json --skip-compile --bins-cfg config/bin_cfgs/Regions_CR_Run3.yaml --bins-per-job ${BINS_PER_JOB} --run-name Cascades_CRFit_Impacts_FD_234L_Run3_${VERSION}
+sleep ${SLEEP}
+
+# Run2 + Run3 CR Fit
 run_all --skip-plot-yields --make-impacts --make-FD --processes-cfg config/process_cfgs/data_processes.yaml --make-json --skip-compile --bins-cfg config/bin_cfgs/Regions_CR.yaml --bins-per-job ${BINS_PER_JOB} --run-name Cascades_CRFit_Impacts_FD_234L_Run2Run3_${VERSION}
 sleep ${SLEEP}
 

@@ -33,6 +33,8 @@
 using namespace std;
 using json = nlohmann::json;
 
+std::string CMS_label = "#bf{CMS} Preliminary";
+
 // -----------------------------------------------------------------------
 // Forward declarations
 // -----------------------------------------------------------------------
@@ -675,7 +677,7 @@ void Fit_Graph_With_Funcs(TCanvas*& canv, TGraphAsymmErrors*& gr_given,
     if (invert_colors) l.SetTextColor(kWhite);
     l.SetTextFont(42); l.SetNDC(); l.SetTextSize(0.04);
     l.DrawLatex(0.55, 0.93, name.c_str());
-    l.DrawLatex(0.13, 0.93, "#bf{#it{CMS}} Internal 13 TeV");
+    l.DrawLatex(0.13, 0.93, CMS_label.c_str());
     pad_gr->Update(); canv->Update();
 
     // Residuals pad

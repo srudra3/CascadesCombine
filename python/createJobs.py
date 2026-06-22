@@ -108,7 +108,13 @@ def make_condor_dir_name(bin_name: str, bins_cfg_path: Optional[Union[str, Path]
     safe = sanitize(bin_name)[:120]
     return f"{safe}__{digest}"
 
-def _flatten_field(value):
+def condor_quote_value(v):
+    """Wrap a value in single quotes if it contains condor/shell special chars."""
+    if any(c in v for c in (';', '|', '&', '(', ')', '<', '>', ' ')):
+        return f"'{v}'"
+    return v
+
+def _flatten_field(value, escape_semi=True):
     if value is None:
         return ""
     s = str(value)
@@ -117,9 +123,11 @@ def _flatten_field(value):
         line = line.split("#", 1)[0].strip()
         if line:
             parts.append(line)
-    joined = " ".join(parts)
+    joined = ";".join(parts)
     joined = joined.replace('"', '\\"')
-    return joined
+    if escape_semi:
+        joined = joined.replace(';', '__SEMI__')
+    return joined if joined else "__EMPTY__"
 
 # ----------------------------------------
 # Write helper scripts (merge/hadd)
@@ -502,83 +510,51 @@ def write_submit_file(
             else:
                 print(f"[createJobs] WARNING: requested --bins-cfg not found: {bins_cfg}", file=sys.stderr)
 
-        # Flatten fields
-        cuts_flat = _flatten_field(job.get("cuts", ""))
-        lep_cuts_flat = _flatten_field(job.get("lep_cuts", "")).replace(" ", "")
-        predef_flat = _flatten_field(job.get("predef_cuts", ""))
-        user_flat = _flatten_field(job.get("user_cuts", ""))
-
         args_list = [
-            f"--lumi {lumi}",
-            f"--bin {bin_name}",
-            f"--file {fpath}",
+            "--lumi", str(lumi),
+            "--bin", bin_name,
+            "--file", fpath,
+            "--proc-yaml", proc_yaml_file,
         ]
-
-        # If a bins-cfg was provided and bin_name is a group (semicolon-separated),
-        # expand per-bin cut fields from the YAML and append them in the same order
-        if bins_cfg_map and ";" in bin_name:
-            # parse bins in the same order as provided
-            bins_list = [b.strip() for b in bin_name.split(";") if b.strip()]
-            for b in bins_list:
-                bcfg = bins_cfg_map.get(b, {}) or {}
-                # Append each per-bin field as its own repeated CLI flag (order preserved)
-                if bcfg.get("cuts"):
-                    args_list.append(f"--cuts {_flatten_field(bcfg.get('cuts'))}")
-                if bcfg.get("lep-cuts"):
-                    args_list.append(f"--lep-cuts {_flatten_field(bcfg.get('lep-cuts')).replace(' ', '')}")
-                if bcfg.get("predefined-cuts"):
-                    args_list.append(f"--predefined-cuts {_flatten_field(bcfg.get('predefined-cuts'))}")
-                if bcfg.get("user-cuts"):
-                    args_list.append(f"--user-cuts {_flatten_field(bcfg.get('user-cuts'))}")
-            # Also pass the basename of the bins-cfg file so BFI_condor can read it locally if desired
-            args_list.append(f"--bins-cfg {Path(bins_cfg).name}")
-        else:
-            # Original behavior: pass single/flattened cuts passed in job config (works for single-bin createJobs calls)
-            if cuts_flat:
-                args_list.append(f"--cuts {cuts_flat}")
-            if lep_cuts_flat:
-                args_list.append(f"--lep-cuts {lep_cuts_flat}")
-            if predef_flat:
-                args_list.append(f"--predefined-cuts {predef_flat}")
-            if user_flat:
-                args_list.append(f"--user-cuts {user_flat}")
-            # if bins_cfg provided but bin_name is single, still pass the file in
-            if bins_cfg:
-                args_list.append(f"--bins-cfg {Path(bins_cfg).name}")
-
-        args_list.append(f"--proc-yaml {proc_yaml_file}")
 
         # Make-json / make-root options
         if make_json:
-            args_list.extend(["--json", f"--json-output {base}.json"])
+            args_list += ["--json", "--json-output", f"{base}.json"]
         if make_root:
-            args_list.extend(["--hist", f"--root-output {base}.root"])
+            args_list += ["--hist", "--root-output", f"{base}.root"]
             if job.get("hist_yaml"):
                 # pass only the basename; condor will transfer the YAML into the job CWD
-                args_list.append(f"--hist-yaml {Path(job['hist_yaml']).name}")
+                args_list += ["--hist-yaml", f"{Path(job['hist_yaml']).name}"]
             if make_cutflow:
-                args_list.append("--cutflow")
+                args_list += ["--cuflow"]
 
-        # Add single-line cut fields
-        if cuts_flat:
-            args_list.append(f"--cuts {cuts_flat}")
-        if lep_cuts_flat:
-            args_list.append(f"--lep-cuts {lep_cuts_flat}")
-        if predef_flat:
-            args_list.append(f"--predefined-cuts {predef_flat}")
-        if user_flat:
-            args_list.append(f"--user-cuts {user_flat}")
+        # Add cut fields
+        cuts_parts = []
+        lep_parts = []
+        predef_parts = []
+        user_parts = []
+        for bn in bin_name.split(";"):
+            bcfg = bins_cfg_map.get(bn, {})
+            cuts_parts.append(_flatten_field(bcfg.get("cuts", "")))
+            lep_parts.append(_flatten_field(bcfg.get("lep-cuts", "")))
+            predef_parts.append(_flatten_field(bcfg.get("predefined-cuts", "")))
+            user_parts.append(_flatten_field(bcfg.get("user-cuts", "")))
+        
+        args_list += ["--cuts",           "|||".join(cuts_parts)]
+        args_list += ["--lep-cuts",       "|||".join(lep_parts)]
+        args_list += ["--predefined-cuts","|||".join(predef_parts)]
+        args_list += ["--user-cuts",      "|||".join(user_parts)]
 
         if sig_type:
-            args_list.append(f"--sig-type {sig_type}")
+            args_list += ["--sig-type", sig_type]
         if sms_filters:
-            joined = ",".join(sms_filters)
-            args_list.extend(["--sms-filters", joined])
-        args_list.append(f"--proc-name {ds}")
+            args_list += ["--sms-filters", ",".join(sms_filters)]
+        args_list += ["--proc-name", ds]
 
-        args_str = " ".join(a for a in args_list if a and not a.isspace())
-        job["args_str"] = args_str
-        job["base"] = base
+        raw_parts = []
+        for a in args_list:
+            raw_parts.append(condor_quote_value(str(a)))
+        job["args_str"] = " ".join(raw_parts).replace('"', '""')
 
     # Write transfer_input_files (global)
     if all_inputs:

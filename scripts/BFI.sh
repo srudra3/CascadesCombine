@@ -38,6 +38,7 @@ SMS_FILTERS=""
 JSON_FLAG=""
 HIST_FLAG=""
 CUTFLOW_FLAG=""
+PROC_NAME=""
 
 # --- Parse arguments (updated to collect repeated per-bin flags) ---
 while [[ $# -gt 0 ]]; do
@@ -59,34 +60,42 @@ while [[ $# -gt 0 ]]; do
 
         # Cuts (collect repeated occurrences)
         --cuts)
+            val=$(clean_arg "$2")
+            [[ "$val" == "__EMPTY__" ]] && val=""
             if [[ -z "$CUTS_MULTI" ]]; then
-                CUTS_MULTI="$(clean_arg "$2")"
+                CUTS_MULTI="$val"
             else
-                CUTS_MULTI="${CUTS_MULTI}|||$(clean_arg "$2")"
+                CUTS_MULTI="${CUTS_MULTI}|||$val"
             fi
             shift 2
             ;;
         --lep-cuts)
+            val=$(clean_arg "$2")
+            [[ "$val" == "__EMPTY__" ]] && val=""
             if [[ -z "$LEP_CUTS_MULTI" ]]; then
-                LEP_CUTS_MULTI="$(clean_arg "$2")"
+                LEP_CUTS_MULTI="$val"
             else
-                LEP_CUTS_MULTI="${LEP_CUTS_MULTI}|||$(clean_arg "$2")"
+                LEP_CUTS_MULTI="${LEP_CUTS_MULTI}|||$val"
             fi
             shift 2
             ;;
         --predefined-cuts)
+            val=$(clean_arg "$2")
+            [[ "$val" == "__EMPTY__" ]] && val=""
             if [[ -z "$PREDEF_CUTS_MULTI" ]]; then
-                PREDEF_CUTS_MULTI="$(clean_arg "$2")"
+                PREDEF_CUTS_MULTI="$val"
             else
-                PREDEF_CUTS_MULTI="${PREDEF_CUTS_MULTI}|||$(clean_arg "$2")"
+                PREDEF_CUTS_MULTI="${PREDEF_CUTS_MULTI}|||$val"
             fi
             shift 2
             ;;
         --user-cuts)
+            val=$(clean_arg "$2")
+            [[ "$val" == "__EMPTY__" ]] && val=""
             if [[ -z "$USER_CUTS_MULTI" ]]; then
-                USER_CUTS_MULTI="$(clean_arg "$2")"
+                USER_CUTS_MULTI="$val"
             else
-                USER_CUTS_MULTI="${USER_CUTS_MULTI}|||$(clean_arg "$2")"
+                USER_CUTS_MULTI="${USER_CUTS_MULTI}|||$val"
             fi
             shift 2
             ;;
@@ -97,6 +106,10 @@ while [[ $# -gt 0 ]]; do
         # Other options
         --sig-type) SIG_TYPE=$(clean_arg "$2"); shift 2;;
         --lumi) LUMI=$(clean_arg "$2"); shift 2;;
+        --proc-name)
+            PROC_NAME=$(clean_arg "$2")
+            shift 2
+            ;;
 
         # Multi-value argument handling for sms filters
         --sms-filters)
@@ -112,6 +125,15 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown option $1"; shift;;
     esac
 done
+
+CUTS_MULTI="${CUTS_MULTI//__SEMI__/;}"
+LEP_CUTS_MULTI="${LEP_CUTS_MULTI//__SEMI__/;}"
+PREDEF_CUTS_MULTI="${PREDEF_CUTS_MULTI//__SEMI__/;}"
+USER_CUTS_MULTI="${USER_CUTS_MULTI//__SEMI__/;}"
+CUTS_MULTI="${CUTS_MULTI//__EMPTY__/}"
+LEP_CUTS_MULTI="${LEP_CUTS_MULTI//__EMPTY__/}"
+PREDEF_CUTS_MULTI="${PREDEF_CUTS_MULTI//__EMPTY__/}"
+USER_CUTS_MULTI="${USER_CUTS_MULTI//__EMPTY__/}"
 
 # --- Auto-generate output filenames if not provided ---
 base_name=$(basename "$ROOTFILE" .root)
@@ -139,6 +161,7 @@ CMD="./BFI_condor.x --bin \"$BIN\" --file \"$ROOTFILE\""
 [[ -n "$HIST_YAML" ]] && CMD="$CMD --hist-yaml \"$HIST_YAML\""
 [[ -n "$PROC_YAML" ]] && CMD="$CMD --proc-yaml \"$PROC_YAML\""
 [[ -n "$CUTFLOW_FLAG" ]] && CMD="$CMD $CUTFLOW_FLAG"
+[[ -n "$PROC_NAME" ]] && CMD="$CMD --proc-name \"$PROC_NAME\""
 
 # If we collected per-bin repeated cuts, pass them as a single --cuts-multi argument (||| as delimiter)
 if [[ -n "$CUTS_MULTI" ]]; then
@@ -175,6 +198,7 @@ fi
 [[ -n "$SMS_FILTERS" ]] && CMD="$CMD --sms-filters \"$SMS_FILTERS\""
 
 # --- Echo and run ---
+echo "$CMD"
 eval "$CMD"
 
 echo "[$(date)] Job finished."

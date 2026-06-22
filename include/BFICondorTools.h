@@ -327,6 +327,18 @@ static void writeSamplesJSON(
     }
 }
 
+bool TreeExistsInFile(const std::string& filename,
+                      const std::string& treeName)
+{
+    std::unique_ptr<TFile> f(TFile::Open(filename.c_str(), "READ"));
+    if (!f || f->IsZombie())
+        return false;
+
+    TObject* obj = f->Get(treeName.c_str());
+    return (obj && obj->InheritsFrom(TTree::Class()));
+}
+
+
 struct SystInfo {
     std::string tag;       // Example: "METtrig"
     std::string nominal;   // Example: "MetTrigSFweight"
@@ -371,18 +383,30 @@ ROOT::RDF::RNode MultiSystWeights(ROOT::RDF::RNode node,
     // --- Nominal product ---
     node = node.Define(
         "syst_nomin_product",
-        //[year](double met, double pu) {
-        //    double metEff = (year > 2018 ? 1.0 : met); // hack since trigSF in Run3 samples set to 0
-        //    return metEff * pu;
-        //    //return 1.; // turn off while debugging
+        // all weights
+        //[](
+        //    double pu, double MuF, double MuR, double PDF,
+        //    double BtagHF, double BtagLF, double met_trig,
+        //    double elBLP_over_COL, double elID_over_BLP, double elISO_over_ID, double elPrompt_ISOID, double elNOT_Prompt_ISOID, double elNOT_ID_nor_ISO,
+        //    double muBLP_over_COL, double muID_over_BLP, double muISO_over_ID, double muPrompt_ISOID, double muNOT_Prompt_ISOID, double muNOT_ID_nor_ISO,
+        //    double prefire
+        //  ) {
+        //      return pu * MuF * MuR * PDF * BtagHF * BtagLF * met_trig * elBLP_over_COL * elID_over_BLP * elISO_over_ID * elPrompt_ISOID * elNOT_Prompt_ISOID * elNOT_ID_nor_ISO * muBLP_over_COL * muID_over_BLP * muISO_over_ID * muPrompt_ISOID * muNOT_Prompt_ISOID * muNOT_ID_nor_ISO * prefire;
         //},
-        //{"MetTrigSFweight", "PUweight"}
+        //{
+        //  "PUweight", "MuFweight", "MuRweight", "PDFweight",
+        //  "BtagHFSFweight", "BtagLFSFweight", "MetTrigSFweight",
+        //  "elBLP_over_COL_SFweight", "elID_over_BLP_SFweight", "elISO_over_ID_SFweight", "elPrompt_ISOID_SFweight", "elNOT_Prompt_ISOID_SFweight", "elNOT_ID_nor_ISO_SFweight",
+        //  "muBLP_over_COL_SFweight", "muID_over_BLP_SFweight", "muISO_over_ID_SFweight", "muPrompt_ISOID_SFweight", "muNOT_Prompt_ISOID_SFweight", "muNOT_ID_nor_ISO_SFweight",
+        //  "PrefireWeight",
+        //}
         
-        //[year](double pu) {
+        //[](double pu) {
         //    return pu;
         //},
         //{"PUweight"}
         
+        // No weights
         []() {
             return 1.;
         },
