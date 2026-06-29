@@ -526,7 +526,7 @@ def write_submit_file(
                 # pass only the basename; condor will transfer the YAML into the job CWD
                 args_list += ["--hist-yaml", f"{Path(job['hist_yaml']).name}"]
             if make_cutflow:
-                args_list += ["--cuflow"]
+                args_list += ["--cutflow"]
 
         # Add cut fields
         cuts_parts = []
