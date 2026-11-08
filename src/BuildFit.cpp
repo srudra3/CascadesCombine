@@ -795,35 +795,35 @@ void BuildFit::BuildFitSkeleton(JSONFactory* j, const std::string& signalPoint, 
     // 6) Add Systematics
     // Turn on autoMCstats
     cb.cp().SetAutoMCStats(cb, 0.); // Second arg is event threshold
-
+    cb.cp().AddSyst(cb, "lumi", "lnN", SystMap<>::init(1.014));
     // All non-triboson processes -> rateParam
-    AddFakeFamiliesAsSharedNorms(
-        truebkgprocs,
-        fakesprocs,
-        "rateParam",
-        1.0,
-        "triboson",
-        false   // exclude triboson
-    );
+   // AddFakeFamiliesAsSharedNorms(
+     //   truebkgprocs,
+     //   fakesprocs,
+    //    "rateParam",
+   //     1.0,
+   //     "triboson",
+   //     false   // exclude triboson
+   // );
     
     // Only triboson processes -> lnN 1.4
-    AddFakeFamiliesAsSharedNorms(
-        truebkgprocs,
-        fakesprocs,
-        "lnN",
-        1.4,
-        "triboson",
-        true    // include only triboson
-    );
+   // AddFakeFamiliesAsSharedNorms(
+     //   truebkgprocs,
+     //   fakesprocs,
+    //    "lnN",
+    //    1.4,
+    //    "triboson",
+    //    true    // include only triboson
+   // );
 
-    AddFloatingNormsGroupedByFakeType(fakesprocs, "rateParam", 1.0);
-    AddFAKETransferSys(kept_bins);
-    AddPTISRSys(kept_bins, bkgprocs);
-    AddSameSignSys(kept_bins, bkgprocs);
-    AddOSOFSys(kept_bins, bkgprocs);
-    AddOSSFSys(kept_bins, bkgprocs);
-    AddLepHemiSys(kept_bins, bkgprocs);
-    AddBtagSys(kept_bins, bkgprocs);
+   // AddFloatingNormsGroupedByFakeType(fakesprocs, "rateParam", 1.0);
+    //AddFAKETransferSys(kept_bins);
+    //AddPTISRSys(kept_bins, bkgprocs);
+    //AddSameSignSys(kept_bins, bkgprocs);
+    //AddOSOFSys(kept_bins, bkgprocs);
+    //AddOSSFSys(kept_bins, bkgprocs);
+    //AddLepHemiSys(kept_bins, bkgprocs);
+    //AddBtagSys(kept_bins, bkgprocs);
 
     cb.FilterSysts([](ch::Systematic const *s){ return s->value_u() == 1.0 && s->value_d() == 1.0; });
     std::cout << "Added all systs\n";
