@@ -4,7 +4,7 @@ import os
 import glob
 import json
 
-BASE_DIR = "runs/zzlikefix/condor"
+BASE_DIR = "runs/allsamples_4l/condor"
 
 results = []
 
@@ -20,7 +20,7 @@ for gdir in group_dirs:
 
     # Only keep ZZTo4L JSON files
     json_files = glob.glob(
-        os.path.join(json_dir, "*ZZto4L*.json")
+        os.path.join(json_dir, "*ZZ_2022*.json")
     )
 
     if not json_files:
