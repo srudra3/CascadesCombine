@@ -74,6 +74,7 @@ M2lZVeto:
   predefined-cuts: ""
   user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;trigger3l;cut_4l_sip3d;cut_4l_eta;cut_4l_eta_min;cut_4l_minmll;cut_4l_offz"
 
+    
 Pt4LJets:
   cuts: "Nbjet==0"
   lep-cuts: ""
@@ -87,11 +88,25 @@ M4lZVetoandM4lHVeto:
   predefined-cuts: ""
   user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;trigger3l;cut_4l_sip3d;cut_4l_eta;cut_4l_eta_min;cut_4l_minmll;cut_4l_offz;cut_4l_pt4l;cut_4l_m4lzv"
 
+
+
+Max2LOR3L_cut_4l_mxcompmll_2p2:
+  cuts: "Nbjet==0"
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;trigger3l;cut_4l_sip3d;cut_4l_eta;cut_4l_eta_min;cut_4l_minmll;cut_4l_offz;cut_4l_pt4l;cut_4l_m4lzv;cut_4l_mxcompmll_2p2"
+
+
+Max2LOR3L_cut_4l_mxcompmll_3p1:
+  cuts: "Nbjet==0"
+  lep-cuts: ""
+  predefined-cuts: ""
+  user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;trigger3l;cut_4l_sip3d;cut_4l_eta;cut_4l_eta_min;cut_4l_minmll;cut_4l_offz;cut_4l_pt4l;cut_4l_m4lzv;cut_4l_mxcompmll_3p1"
+
 Max2LOR3L:
   cuts: "Nbjet==0"
   lep-cuts: ""
   predefined-cuts: ""
   user-cuts: "cut_4l_nlep;cut_4l_pt1;cut_4l_pt2;cut_4l_pt3;cut_4l_pt4;trigger3l;cut_4l_sip3d;cut_4l_eta;cut_4l_eta_min;cut_4l_minmll;cut_4l_offz;cut_4l_pt4l;cut_4l_m4lzv;cut_4l_mxcompmll"
-
 
 

@@ -14,6 +14,13 @@ struct QuadLeptonResult {
     double maxmll;
     int nossf;
     double devZ;
+    int Z1_i1, Z1_i2; //Indices of first Z pair
+    double Z2_mass;  //Mass of second second (not-first) Z pair
+    double Z1_mass;
+    double PTlep0;
+    double PTlep1;
+    double PTlep2;
+    double PTlep3;
     double othermll;
     double minm3l;
     int minPairCode;
@@ -132,7 +139,8 @@ QuadLeptonResult ComputeQuadLeptonInfo(
     const std::vector<int>& PDGID_lep) {
     
     QuadLeptonResult result{};
-    
+    result.Z1_i1 = -1;
+    result.Z1_i2 = -1;
     if (PT_lep.size() < 4) return result;
     
     // Helper to get charge*flavor code (from PDGID and Charge)
@@ -175,7 +183,11 @@ QuadLeptonResult ComputeQuadLeptonInfo(
             std::abs(PDGID_lep[i1]) == std::abs(PDGID_lep[i2])) {
             result.nossf++;
             double thisdevZ = m - MZ;
-            if (std::abs(thisdevZ) < std::abs(result.devZ)) result.devZ = thisdevZ;
+            if (std::abs(thisdevZ) < std::abs(result.devZ)) {
+		result.devZ = thisdevZ;
+		result.Z1_i1 = i1;
+		result.Z1_i2 = i2;
+	    }
             return true;
         }
         return false;
@@ -187,6 +199,36 @@ QuadLeptonResult ComputeQuadLeptonInfo(
     checkOSSF(m23, 1, 2);
     checkOSSF(m24, 1, 3);
     checkOSSF(m34, 2, 3);
+    
+    // NOW compute Z2_mass from the companion leptons
+    if (result.Z1_i1 >= 0 && result.Z1_i2 >= 0) {
+	//Find the two leptons NOT in Z1
+	std::vector<int> Z2_indices;
+	for (int i = 0; i < 4; i++) {
+	    if (i != result.Z1_i1 && i != result.Z1_i2) {
+		Z2_indices.push_back(i);
+            }
+	}
+    if (Z2_indices.size() == 2) {
+	result.Z2_mass = ComputeMass(
+		PT_lep[Z2_indices[0]], Eta_lep[Z2_indices[0]], Phi_lep[Z2_indices[0]], M_lep[Z2_indices[0]],
+		PT_lep[Z2_indices[1]], Eta_lep[Z2_indices[1]], Phi_lep[Z2_indices[1]], M_lep[Z2_indices[1]]
+		);
+    } else { 
+	result.Z2_mass = -999.0;
+    }
+    }
+
+    if (result.Z1_i1 >= 0 && result.Z1_i2 >= 0) {
+	result.Z1_mass = ComputeMass(
+		PT_lep[result.Z1_i1], Eta_lep[result.Z1_i1], Phi_lep[result.Z1_i1], M_lep[result.Z1_i1],
+		PT_lep[result.Z1_i2], Eta_lep[result.Z1_i2], Phi_lep[result.Z1_i2], M_lep[result.Z1_i2]
+		);
+	result.PTlep0 = PT_lep[0];
+	result.PTlep1 = PT_lep[1];
+	result.PTlep2 = PT_lep[2];
+        result.PTlep3 = PT_lep[3];
+    } 
     
     // Find min dilepton mass pair (Ana.C lines 385-409)
     struct Entry {
@@ -279,13 +321,69 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
             {"PT_lep", "LepQual_lep"}
         );
     }
-    
-    // Step 2: Check we have at least 4 gold+silver leptons (Ana.C line 1008)
+   if (!node.HasColumn("quad_nlep4l")) {
+        node = node.Define("quad_nlep4l",
+            [](const std::vector<int>& vlidx) -> int { return (int)vlidx.size(); },
+            {"vlidx_4l"}
+        );
+    }
+ 
     CutDef cut_4l_nlep;
     cut_4l_nlep.name = "cut_4l_nlep";
-    cut_4l_nlep.columns = {"vlidx_4l"};
-    cut_4l_nlep.expression = "vlidx_4l.size() >= 4";
+    cut_4l_nlep.columns = {"quad_nlep4l"};
+    cut_4l_nlep.expression = "quad_nlep4l >= 4";
     cuts[cut_4l_nlep.name] = cut_4l_nlep;
+     // Step 2: Check we have at least 4 gold+silver leptons (Ana.C line 1008)
+
+        if (!node.HasColumn("quad_nele4l")) {
+        node = node.Define("quad_nele4l",
+            [](const std::vector<int>& vlidx, const std::vector<int>& pdgid) -> int {
+                if (vlidx.size() < 4) return -1;
+                int nele = 0;
+                for (int i = 0; i < 4; ++i)
+                    if (std::abs(pdgid[vlidx[i]]) == 11) ++nele;
+                return nele;   // 4 = 4e, 3 = 3e1mu, 2 = 2e2mu, 1 = 1e3mu, 0 = 4mu
+            },
+            {"vlidx_4l", "PDGID_lep"}
+        );
+    }
+
+    CutDef cut_4l_4e;
+    cut_4l_4e.name = "cut_4l_4e";
+    cut_4l_4e.columns = {"quad_nele4l"};
+    cut_4l_4e.expression = "quad_nele4l == 4";
+    cuts[cut_4l_4e.name] = cut_4l_4e;
+
+    CutDef cut_4l_3e1mu;
+    cut_4l_3e1mu.name = "cut_4l_3e1mu";
+    cut_4l_3e1mu.columns = {"quad_nele4l"};
+    cut_4l_3e1mu.expression = "quad_nele4l == 3";
+    cuts[cut_4l_3e1mu.name] = cut_4l_3e1mu;
+
+    CutDef cut_4l_2e2mu;
+    cut_4l_2e2mu.name = "cut_4l_2e2mu";
+    cut_4l_2e2mu.columns = {"quad_nele4l"};
+    cut_4l_2e2mu.expression = "quad_nele4l == 2";
+    cuts[cut_4l_2e2mu.name] = cut_4l_2e2mu;
+
+    CutDef cut_4l_1e3mu;
+    cut_4l_1e3mu.name = "cut_4l_1e3mu";
+    cut_4l_1e3mu.columns = {"quad_nele4l"};
+    cut_4l_1e3mu.expression = "quad_nele4l == 1";
+    cuts[cut_4l_1e3mu.name] = cut_4l_1e3mu;
+
+    CutDef cut_4l_4mu;
+    cut_4l_4mu.name = "cut_4l_4mu";
+    cut_4l_4mu.columns = {"quad_nele4l"};
+    cut_4l_4mu.expression = "quad_nele4l == 0";
+    cuts[cut_4l_4mu.name] = cut_4l_4mu;
+
+
+    //CutDef cut_4l_nlep;
+    //cut_4l_nlep.name = "cut_4l_nlep";
+    //cut_4l_nlep.columns = {"vlidx_4l"};
+   // cut_4l_nlep.expression = "vlidx_4l.size() >= 4";
+  //  cuts[cut_4l_nlep.name] = cut_4l_nlep;
     
     // Step 3: Extract pT of the 4 selected leptons (Ana.C lines 1012-1015)
     // ptcuts4l = {18.0, 8.0, 6.0, 2.0}
@@ -393,7 +491,7 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
     CutDef cut_4l_eta;
     cut_4l_eta.name = "cut_4l_eta";
     cut_4l_eta.columns = {"quad_eta_max"};
-    cut_4l_eta.expression = "quad_eta_max < 2.1"; //Only for debugging, really should be 2.1
+    cut_4l_eta.expression = "quad_eta_max < 1.5"; 
     cuts[cut_4l_eta.name] = cut_4l_eta;  
 
 
@@ -412,7 +510,7 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
                const std::vector<double>& phi, const std::vector<double>& mass,
                const std::vector<int>& charge, const std::vector<int>& pdgid) -> std::vector<double> {
                 
-                std::vector<double> info(13, 0.0);  // Return 13 values
+                std::vector<double> info(19, 0.0);  // Return 19 values
                 
                 if (vlidx.size() < 4) return info;
                 
@@ -439,6 +537,12 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
                 info[10] = result.min2lPairedMass;
                 info[11] = result.minOthermll;
                 info[12] = result.minOthermllOS;
+		info[13] = result.Z2_mass;
+		info[14] = result.Z1_mass;
+		info[15] = result.PTlep0;
+		info[16] = result.PTlep1;
+		info[17] = result.PTlep2;
+		info[18] = result.PTlep3;
                 
                 return info;
             },
@@ -461,6 +565,64 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
         );
     }
     
+    if (!node.HasColumn("quad_Z2_mass")) {
+        node = node.Define("quad_Z2_mass",
+            [](const std::vector<double>& info) { 
+                return info.size() > 13 ? info[13] : 0.0;
+            },
+            {"quad_info"}
+        );
+    }  
+   
+    
+    if (!node.HasColumn("quad_Z1_mass")) {
+        node = node.Define("quad_Z1_mass",
+            [](const std::vector<double>& info) { 
+                return info.size() > 14 ? info[14] : 0.0;
+            },
+            {"quad_info"}
+        );
+    }  
+    
+     
+    if (!node.HasColumn("quad_PT_lep0")) {
+        node = node.Define("quad_PT_lep0",
+            [](const std::vector<double>& info) { 
+                return info.size() > 15 ? info[15] : 0.0;
+            },
+            {"quad_info"}
+        );
+    }  
+
+      
+    if (!node.HasColumn("quad_PT_lep1")) {
+        node = node.Define("quad_PT_lep1",
+            [](const std::vector<double>& info) { 
+                return info.size() > 16 ? info[16] : 0.0;
+            },
+            {"quad_info"}
+        );
+    }  
+          
+    if (!node.HasColumn("quad_PT_lep2")) {
+        node = node.Define("quad_PT_lep2",
+            [](const std::vector<double>& info) { 
+                return info.size() > 17 ? info[17] : 0.0;
+            },
+            {"quad_info"}
+        );
+    }
+
+     
+    if (!node.HasColumn("quad_PT_lep3")) {
+        node = node.Define("quad_PT_lep3",
+            [](const std::vector<double>& info) { 
+                return info.size() > 18 ? info[18] : 0.0;
+            },
+            {"quad_info"}
+        );
+    }  
+
     if (!node.HasColumn("quad_maxsip3d")) {
         node = node.Define("quad_maxsip3d",
             [](const std::vector<int>& vlidx, const std::vector<double>& sip3d) -> double {
@@ -470,9 +632,25 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
             {"vlidx_4l", "SIP3D_lep"}
         );
     }
+
+    if (!node.HasColumn("quad_nossf")) {
+        node = node.Define("quad_nossf",
+            [](const std::vector<double>& info) {
+                return (int)info[2];  // nossf from ComputeQuadLeptonInfo
+            },
+            {"quad_info"}
+        );
+    }
     
     // Step 5: Apply 4-lepton cuts (Ana.C lines 1073-1123)
     
+    CutDef cut_4l_nossf_eq2;
+    cut_4l_nossf_eq2.name = "cut_4l_nossf_eq2";
+    cut_4l_nossf_eq2.columns = {"quad_nossf"};
+    cut_4l_nossf_eq2.expression = "quad_nossf == 2";
+    cuts[cut_4l_nossf_eq2.name] = cut_4l_nossf_eq2;
+
+
     // Min dilepton mass > 4 GeV (Ana.C line 1073)
     CutDef cut_4l_minmll;
     cut_4l_minmll.name = "cut_4l_minmll";
@@ -486,6 +664,34 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
     cut_4l_offz.columns = {"quad_devZ"};
     cut_4l_offz.expression = "abs(quad_devZ) >= 7.5";
     cuts[cut_4l_offz.name] = cut_4l_offz;
+   
+    // ZZ Control region - Z's on-shell
+    CutDef cut_4l_offz_ZZCR; 
+    cut_4l_offz_ZZCR.name = "cut_4l_offz_ZZCR";
+    cut_4l_offz_ZZCR.columns = {"quad_devZ"};
+    cut_4l_offz_ZZCR.expression = "abs(quad_devZ) < 5";
+    cuts[cut_4l_offz_ZZCR.name] = cut_4l_offz_ZZCR;
+
+
+    CutDef cut_4l_offz_ZZCR_Z2; 
+    cut_4l_offz_ZZCR_Z2.name = "cut_4l_offz_ZZCR_Z2";
+    cut_4l_offz_ZZCR_Z2.columns = {"quad_devZ2"};
+    cut_4l_offz_ZZCR_Z2.expression = "abs(quad_devZ2) < 7.5";
+    cuts[cut_4l_offz_ZZCR_Z2.name] = cut_4l_offz_ZZCR_Z2;
+   
+
+    CutDef cut_4l_ZZCR_Z2mass; 
+    cut_4l_ZZCR_Z2mass.name = "cut_4l_ZZCR_Z2mass";
+    cut_4l_ZZCR_Z2mass.columns = {"quad_Z2_mass"};
+    cut_4l_ZZCR_Z2mass.expression = "abs(quad_Z2_mass) > 25"; 
+    cuts[cut_4l_ZZCR_Z2mass.name] = cut_4l_ZZCR_Z2mass;
+
+    
+    CutDef cut_4l_ZZCR_offZ2; 
+    cut_4l_ZZCR_offZ2.name = "cut_4l_ZZCR_offZ2";
+    cut_4l_ZZCR_offZ2.columns = {"quad_Z2_mass"};
+    cut_4l_ZZCR_offZ2.expression = "abs(quad_Z2_mass-91.2) < 30"; 
+    cuts[cut_4l_ZZCR_offZ2.name] = cut_4l_ZZCR_offZ2;
     
     // Pt4L cut: 4-lepton system pT (Ana.C line 1081)
     // if( (*Njet == 0 && pt4l < 10.0) || (*Njet >=1 && pt4ljets < 30.0)) fail
@@ -538,9 +744,56 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
     cut_4l_pt4l.columns = {"quad_pt4l"};
     cut_4l_pt4l.expression = "quad_pt4l == true";
     cuts[cut_4l_pt4l.name] = cut_4l_pt4l;
+
+
+
+
+
+    // Define the actual pT value (for plotting)
+if (!node.HasColumn("quad_pt4l_val")) {
+    node = node.Define("quad_pt4l_val",
+        [](const std::vector<int>& vlidx, const std::vector<double>& pt_lep,
+           const std::vector<double>& eta_lep, const std::vector<double>& phi_lep,
+           const std::vector<double>& m_lep, const std::vector<int>& pdgid_lep,
+           int njet, const std::vector<double>& jet_pt,
+           const std::vector<double>& jet_eta, const std::vector<double>& jet_phi, const std::vector<double>& jet_m) -> double {
+            if (vlidx.size() < 4) return -999.0;
+
+            FourVec l1 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[0]], pt_lep[vlidx[0]], eta_lep[vlidx[0]], phi_lep[vlidx[0]], m_lep[vlidx[0]]);
+            FourVec l2 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[1]], pt_lep[vlidx[1]], eta_lep[vlidx[1]], phi_lep[vlidx[1]], m_lep[vlidx[1]]);
+            FourVec l3 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[2]], pt_lep[vlidx[2]], eta_lep[vlidx[2]], phi_lep[vlidx[2]], m_lep[vlidx[2]]);
+            FourVec l4 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[3]], pt_lep[vlidx[3]], eta_lep[vlidx[3]], phi_lep[vlidx[3]], m_lep[vlidx[3]]);
+            FourVec l1234 = (l1 + l2) + (l3 + l4);
+
+            double pt4l = l1234.Pt();
+
+            if (njet == 0 || jet_pt.empty()) {
+                return pt4l;
+            }
+
+            FourVec allJets;
+            for (size_t j = 0; j < jet_pt.size() && j < jet_eta.size() && j < jet_phi.size(); ++j) {
+                FourVec jet = FourVec::FromPtEtaPhiM(1, jet_pt[j], jet_eta[j], jet_phi[j], jet_m[j]);
+                allJets = allJets + jet;
+            }
+            return (l1234 + allJets).Pt();  // pt4ljets when njet > 0
+        },
+        {"vlidx_4l", "PT_lep", "Eta_lep", "Phi_lep", "M_lep", "PDGID_lep", "Njet", "PT_jet", "Eta_jet", "Phi_jet", "M_jet"}
+    );
+}
+
+// Boolean cut built from the value column, matching Ana.C's njet-dependent threshold
+if (!node.HasColumn("quad_pt4l_pass")) {
+    node = node.Define("quad_pt4l_pass",
+        [](double pt4l_val, int njet) -> bool {
+            if (pt4l_val < -900.0) return false; // guard for the <4-lepton case
+            return (njet == 0) ? (pt4l_val >= 10.0) : (pt4l_val >= 30.0);
+        },
+        {"quad_pt4l_val", "Njet"}
+    );
+}
     
     // M4LZV cut: ZZ-like mass veto (Ana.C line 1084)
-    // Vetoes: ZZlike && (|m4l - 91.2| < 10.0 || (m4l > 121.0 && m4l < 127.0))
     if (!node.HasColumn("quad_m4l")) {
         node = node.Define("quad_m4l",
             [](const std::vector<int>& vlidx, const std::vector<double>& pt_lep,
@@ -633,6 +886,26 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
             {"quad_zzlike", "quad_m4l"}
         );
     }
+
+
+    if (!node.HasColumn("quad_m4lzv_pass_ZZCR")) {
+        node = node.Define("quad_m4lzv_pass_ZZCR",
+            [](bool zzlike, double m4l) -> bool {
+                if (!zzlike) return false;  // Require ZZlike topology
+                if (m4l > 167.0) return true;
+                return false;  // Reject everything else
+        },
+            {"quad_zzlike", "quad_m4l"}
+    );
+}
+
+
+
+    CutDef cut_4l_m4lzv_ZZCR;
+    cut_4l_m4lzv_ZZCR.name = "cut_4l_m4lzv_ZZCR";
+    cut_4l_m4lzv_ZZCR.columns = {"quad_m4lzv_pass_ZZCR"};
+    cut_4l_m4lzv_ZZCR.expression = "quad_m4lzv_pass_ZZCR == true";
+    cuts[cut_4l_m4lzv_ZZCR.name] = cut_4l_m4lzv_ZZCR;
     
     CutDef cut_4l_m4lzv;
     cut_4l_m4lzv.name = "cut_4l_m4lzv";
@@ -700,9 +973,141 @@ ROOT::RDF::RNode BuildFitInput::loadCutsUser(ROOT::RDF::RNode &node, std::map<st
    
 
 
+// Raw values (for plotting/diagnostics)
+if (!node.HasColumn("quad_maxMassHemi4l")) {
+    node = node.Define("quad_maxMassHemi4l",
+        [](const std::vector<int>& vlidx, const std::vector<double>& pt_lep,
+           const std::vector<double>& eta_lep, const std::vector<double>& phi_lep,
+           const std::vector<double>& m_lep, const std::vector<int>& pdgid_lep) -> double {
+            if (vlidx.size() < 4) return -999.0;
+
+            FourVec l1 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[0]], pt_lep[vlidx[0]], eta_lep[vlidx[0]], phi_lep[vlidx[0]], m_lep[vlidx[0]]);
+            FourVec l2 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[1]], pt_lep[vlidx[1]], eta_lep[vlidx[1]], phi_lep[vlidx[1]], m_lep[vlidx[1]]);
+            FourVec l3 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[2]], pt_lep[vlidx[2]], eta_lep[vlidx[2]], phi_lep[vlidx[2]], m_lep[vlidx[2]]);
+            FourVec l4 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[3]], pt_lep[vlidx[3]], eta_lep[vlidx[3]], phi_lep[vlidx[3]], m_lep[vlidx[3]]);
+
+            std::vector<FourVec> leptons = {l1, l2, l3, l4};
+            auto cs = EventShape::ComputeThrustAxisInCS(leptons, 6800.0);
+            auto hemis = EventShape::ComputeThrustHemispheres(leptons, cs.zCS);
+
+            return std::max(hemis.massPlus, hemis.massMinus);
+        },
+        {"vlidx_4l", "PT_lep", "Eta_lep", "Phi_lep", "M_lep", "PDGID_lep"}
+    );
+}
+
+if (!node.HasColumn("quad_nlepMaxHemi4l")) {
+    node = node.Define("quad_nlepMaxHemi4l",
+        [](const std::vector<int>& vlidx, const std::vector<double>& pt_lep,
+           const std::vector<double>& eta_lep, const std::vector<double>& phi_lep,
+           const std::vector<double>& m_lep, const std::vector<int>& pdgid_lep) -> int {
+            if (vlidx.size() < 4) return -1;
+
+            FourVec l1 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[0]], pt_lep[vlidx[0]], eta_lep[vlidx[0]], phi_lep[vlidx[0]], m_lep[vlidx[0]]);
+            FourVec l2 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[1]], pt_lep[vlidx[1]], eta_lep[vlidx[1]], phi_lep[vlidx[1]], m_lep[vlidx[1]]);
+            FourVec l3 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[2]], pt_lep[vlidx[2]], eta_lep[vlidx[2]], phi_lep[vlidx[2]], m_lep[vlidx[2]]);
+            FourVec l4 = FourVec::FromPtEtaPhiM(pdgid_lep[vlidx[3]], pt_lep[vlidx[3]], eta_lep[vlidx[3]], phi_lep[vlidx[3]], m_lep[vlidx[3]]);
+
+            std::vector<FourVec> leptons = {l1, l2, l3, l4};
+            auto cs = EventShape::ComputeThrustAxisInCS(leptons, 6800.0);
+            auto hemis = EventShape::ComputeThrustHemispheres(leptons, cs.zCS);
+
+            return std::max(hemis.nPlus, hemis.nMinus);
+        },
+        {"vlidx_4l", "PT_lep", "Eta_lep", "Phi_lep", "M_lep", "PDGID_lep"}
+    );
+}
+
+// Original signal-region veto, now built from the value columns
+if (!node.HasColumn("quad_mxcompmll_SR")) {
+    node = node.Define("quad_mxcompmll_SR",
+        [](int nlepMaxHemi4l, double maxMassHemi4l) -> bool {
+            if (nlepMaxHemi4l < 0) return false;
+            if (nlepMaxHemi4l == 2) return maxMassHemi4l <= 23.0;
+            return maxMassHemi4l <= 39.0;
+        },
+        {"quad_nlepMaxHemi4l", "quad_maxMassHemi4l"}
+    );
+}
+
+// Candidate ZZCR selection: events failing the SR veto (ZZ-like, high hemisphere mass)
+if (!node.HasColumn("quad_mxcompmll_ZZCR")) {
+    node = node.Define("quad_mxcompmll_ZZCR",
+        [](int nlepMaxHemi4l, double maxMassHemi4l) -> bool {
+            if (nlepMaxHemi4l < 0) return false;
+            if (nlepMaxHemi4l == 2) return maxMassHemi4l > 23.0;
+            return maxMassHemi4l > 39.0;
+        },
+        {"quad_nlepMaxHemi4l", "quad_maxMassHemi4l"}
+    );
+}
+
+// Configuration flags: which hemisphere split this event has
+if (!node.HasColumn("quad_is2p2")) {
+    node = node.Define("quad_is2p2",
+        [](int nlepMaxHemi4l) -> bool {
+            return nlepMaxHemi4l == 2;
+        },
+        {"quad_nlepMaxHemi4l"}
+    );
+}
+
+if (!node.HasColumn("quad_is3p1")) {
+    node = node.Define("quad_is3p1",
+        [](int nlepMaxHemi4l) -> bool {
+            // Matches original Ana.C "else" branch: everything that isn't 2+2
+            // (in practice this is 3+1; a 4+0 split would also land here, if it occurs)
+            return nlepMaxHemi4l >= 0 && nlepMaxHemi4l != 2;
+        },
+        {"quad_nlepMaxHemi4l"}
+    );
+}
+
+// Mass-window pass/fail for each configuration (independent of the other)
+if (!node.HasColumn("quad_mxcompmll_2p2_pass")) {
+    node = node.Define("quad_mxcompmll_2p2_pass",
+        [](bool is2p2, double maxMassHemi4l) -> bool {
+            if (!is2p2) return false;
+            return maxMassHemi4l <= 23.0;
+        },
+        {"quad_is2p2", "quad_maxMassHemi4l"}
+    );
+}
+
+if (!node.HasColumn("quad_mxcompmll_3p1_pass")) {
+    node = node.Define("quad_mxcompmll_3p1_pass",
+        [](bool is3p1, double maxMassHemi4l) -> bool {
+            if (!is3p1) return false;
+            return maxMassHemi4l <= 39.0;
+        },
+        {"quad_is3p1", "quad_maxMassHemi4l"}
+    );
+}
 
 
+CutDef cut_4l_is2p2;
+cut_4l_is2p2.name = "cut_4l_is2p2";
+cut_4l_is2p2.columns = {"quad_is2p2"};
+cut_4l_is2p2.expression = "quad_is2p2 == true";
+cuts[cut_4l_is2p2.name] = cut_4l_is2p2;
 
+CutDef cut_4l_is3p1;
+cut_4l_is3p1.name = "cut_4l_is3p1";
+cut_4l_is3p1.columns = {"quad_is3p1"};
+cut_4l_is3p1.expression = "quad_is3p1 == true";
+cuts[cut_4l_is3p1.name] = cut_4l_is3p1;
+
+CutDef cut_4l_mxcompmll_2p2;
+cut_4l_mxcompmll_2p2.name = "cut_4l_mxcompmll_2p2";
+cut_4l_mxcompmll_2p2.columns = {"quad_mxcompmll_2p2_pass"};
+cut_4l_mxcompmll_2p2.expression = "quad_mxcompmll_2p2_pass == true";
+cuts[cut_4l_mxcompmll_2p2.name] = cut_4l_mxcompmll_2p2;
+
+CutDef cut_4l_mxcompmll_3p1;
+cut_4l_mxcompmll_3p1.name = "cut_4l_mxcompmll_3p1";
+cut_4l_mxcompmll_3p1.columns = {"quad_mxcompmll_3p1_pass"};
+cut_4l_mxcompmll_3p1.expression = "quad_mxcompmll_3p1_pass == true";
+cuts[cut_4l_mxcompmll_3p1.name] = cut_4l_mxcompmll_3p1;
 
 
 
