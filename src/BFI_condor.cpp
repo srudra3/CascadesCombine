@@ -134,6 +134,11 @@ int main(int argc, char** argv) {
     else if (rootFilePath.find("Summer26_130X") != std::string::npos) year = 2026;
     if (Lumi <= 0.) Lumi = GetLumiFromKey(rootFilePath); // get lumi from ST for file
     if (sampleName.empty()) sampleName = GetSampleNameFromKey(rootFilePath);
+    if (rootFilePath.find("GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg2-JHUGenV752") != std::string::npos) {
+        const double xsecFix = 14.05225371 / 23160.0;
+        std::cout << "[BFI_condor] Applying xsec correction " << xsecFix << " to " << rootFilePath << std::endl;
+        Lumi *= xsecFix;
+    }
     if (binArg.empty() || rootFilePath.empty() || (!doHist && !doJSON)) { usage(argv[0]); return 1; }
     std::cout << "Using Lumi: " << Lumi << std::endl;
 
